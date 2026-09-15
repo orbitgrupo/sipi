@@ -1,0 +1,29 @@
+# Dependencies
+backend/node_modules/
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+
+# Build outputs
+backend/*.db
+backend/*.sqlite
+app/build/
+admin/*.log
+
+# Env and secrets
+.env
+*.env
+backend/.env
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

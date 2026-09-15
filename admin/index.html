@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sipi · Panel de administración</title>
+<style>
+  :root { --primary:#3B82F6; --primary-dark:#2563EB; --bg:#F1F5F9; --card:#fff;
+          --text:#1E293B; --muted:#64748B; --ok:#16A34A; --warn:#D97706; --bad:#DC2626; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--primary); color:#fff; padding:14px 24px; display:flex;
+           align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
+  .brand { font-size:22px; font-weight:800; }
+  .brand small { font-weight:400; opacity:.8; font-size:13px; margin-left:8px; }
+  nav.tabs { display:flex; gap:6px; background:#fff; padding:0 24px; border-bottom:1px solid #E2E8F0; overflow-x:auto; }
+  nav.tabs button { border:none; background:none; padding:14px 12px; font-size:14px; font-weight:600;
+                    color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; white-space:nowrap; }
+  nav.tabs button.active { color:var(--primary); border-bottom-color:var(--primary); }
+  main { max-width:1100px; margin:0 auto; padding:24px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:24px; }
+  .card { background:var(--card); border-radius:12px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .card .n { font-size:26px; font-weight:800; }
+  .card .l { color:var(--muted); font-size:13px; margin-top:4px; }
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden;
+          box-shadow:0 1px 3px rgba(0,0,0,.06); font-size:14px; }
+  th,td { text-align:left; padding:12px 14px; border-bottom:1px solid #F1F5F9; vertical-align:middle; }
+  th { background:#F8FAFC; color:var(--muted); font-size:12px; text-transform:uppercase; }
+  .btn { border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer; }
+  .btn.primary { background:var(--primary); color:#fff; }
+  .btn.primary:hover { background:var(--primary-dark); }
+  .btn.ghost { background:#E2E8F0; color:var(--text); }
+  .btn.ok { background:#DCFCE7; color:var(--ok); }
+  .btn.bad { background:#FEE2E2; color:var(--bad); }
+  .btn:disabled { opacity:.5; cursor:default; }
+  .pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; }
+  .pill.pending { background:#FEF3C7; color:var(--warn); }
+  .pill.approved,.pill.completed,.pill.active { background:#DCFCE7; color:var(--ok); }
+  .pill.rejected,.pill.inactive { background:#FEE2E2; color:var(--bad); }
+  .row-actions { display:flex; gap:6px; }
+  #login { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .login-box { background:#fff; border-radius:16px; padding:36px; width:100%; max-width:400px;
+               box-shadow:0 4px 20px rgba(0,0,0,.08); }
+  .login-box h1 { color:var(--primary); font-size:32px; margin-bottom:4px; }
+  .login-box p { color:var(--muted); margin-bottom:20px; }
+  label { display:block; font-size:13px; font-weight:600; margin:12px 0 4px; }
+  input,select,textarea { width:100%; padding:10px 12px; border:1.5px solid #E2E8F0; border-radius:8px; font-size:14px; }
+  input:focus,select:focus,textarea:focus { outline:none; border-color:var(--primary); }
+  .error { color:var(--bad); font-size:13px; margin-top:8px; min-height:18px; }
+  .toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .toolbar h2 { font-size:20px; }
+  .modal { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:50; padding:16px; }
+  .modal.open { display:flex; }
+  .modal .box { background:#fff; border-radius:14px; padding:24px; width:100%; max-width:560px; max-height:90vh; overflow:auto; }
+  .modal h3 { margin-bottom:8px; }
+  .q-row { background:#F8FAFC; border-radius:8px; padding:10px; margin-top:8px; }
+  .q-row .qhead { display:flex; gap:8px; align-items:center; }
+  .q-row input[type=text] { margin-top:6px; }
+  .hidden { display:none !important; }
+  .note { color:var(--muted); font-size:13px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login">
+  <div class="login-box">
+    <h1>Sipi</h1>
+    <p>Panel de administración</p>
+    <label>Correo</label><input id="email" type="email" placeholder="admin@sipi.app">
+    <label>Contraseña</label><input id="pass" type="password" placeholder="••••••••">
+    <div class="error" id="loginErr"></div>
+    <button class="btn primary" style="width:100%;padding:12px;margin-top:8px" onclick="doLogin()">Entrar</button>
+    <p class="note">Solo cuentas con rol <b>admin</b> pueden acceder.</p>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" class="hidden">
+  <header>
+    <div class="brand">Sipi <small>Panel admin</small></div>
+    <div><span id="adminName" style="font-size:14px;margin-right:12px"></span>
+    <button class="btn ghost" onclick="logout()">Salir</button></div>
+  </header>
+  <nav class="tabs" id="tabs"></nav>
+  <main id="view"></main>
+</div>
+
+<!-- Modal genérico -->
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+
+<script>
+const API = location.origin.includes(':8080') ? 'http://localhost:3000' : location.origin;
+let TOKEN = localStorage.getItem('sipi_admin_token') || '';
+let TAB = 'resumen';
+const CATS = {social:'Redes sociales',encuestas:'Encuestas',productos:'Productos',opinion:'Opinión',promociones:'Promociones',otras:'Otras'};
+
+const h = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pill = (s) => `<span class="pill ${h(s)}">${h({pending:'Pendiente',approved:'Aprobada',rejected:'Rechazada',completed:'Completado',active:'Activa',inactive:'Inactiva'}[s]||s)}</span>`;
+
+async function req(method, path, body) {
+  const r = await fetch(API + path, {
+    method, headers: { 'Content-Type':'application/json', ...(TOKEN ? {Authorization:'Bearer '+TOKEN} : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+  return j;
+}
+
+async function doLogin() {
+  const err = document.getElementById('loginErr'); err.textContent = '';
+  try {
+    const j = await req('POST', '/api/auth/login', { email: email.value.trim(), password: pass.value });
+    if (j.user.role !== 'admin') throw new Error('Esta cuenta no es administradora.');
+    TOKEN = j.token;
+    localStorage.setItem('sipi_admin_token', TOKEN);
+    document.getElementById('adminName').textContent = j.user.name;
+    enter();
+  } catch (e) { err.textContent = 'No se pudo entrar: ' + e.message; }
+}
+function logout() { TOKEN=''; localStorage.removeItem('sipi_admin_token');
+  document.getElementById('app').classList.add('hidden'); document.getElementById('login').style.display='flex'; }
+
+const TABS = [['resumen','Resumen'],['tareas','Tareas'],['verif','Verificaciones'],
+              ['usuarios','Usuarios'],['canjes','Canjes'],['config','Configuración']];
+function enter() {
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('tabs').innerHTML = TABS.map(([k,l]) =>
+    `<button data-t="${k}" class="${k===TAB?'active':''}" onclick="go('${k}')">${l}</button>`).join('');
+  go(TAB);
+}
+function go(t) {
+  TAB = t;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+  ({resumen:vResumen, tareas:vTareas, verif:vVerif, usuarios:vUsuarios, canjes:vCanjes, config:vConfig})[t]();
+}
+
+// ---- Resumen ----
+async function vResumen() {
+  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
+  try {
+    const s = await req('GET', '/api/admin/stats');
+    v.innerHTML = `
+      <div class="toolbar"><h2>Resumen</h2></div>
+      <div class="cards">
+        <div class="card"><div class="n">${s.users}</div><div class="l">Usuarios</div></div>
+        <div class="card"><div class="n">${s.active_tasks}</div><div class="l">Tareas activas</div></div>
+        <div class="card"><div class="n">${s.pending_completions}</div><div class="l">Verificaciones pendientes</div></div>
+        <div class="card"><div class="n">${s.points_issued.toLocaleString()}</div><div class="l">Puntos emitidos</div></div>
+        <div class="card"><div class="n">$${s.pending_payouts_usd.toFixed(2)}</div><div class="l">Pagos pendientes (USD)</div></div>
+      </div>
+      <div class="card"><b>Próximos pasos sugeridos</b>
+        <p class="note">Revisa las verificaciones pendientes, aprueba o rechaza los canjes solicitados y mantén la conversión puntos→USD actualizada en Configuración.</p>
+      </div>`;
+  } catch(e) { v.innerHTML = `<p class="error">Error: ${h(e.message)}</p>`; }
+}
+
+// ---- Tareas ----
+async function vTareas() {
+  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
+  try {
+    const {tasks} = await req('GET', '/api/tasks?limit=200');
+    v.innerHTML = `
+      <div class="toolbar"><h2>Tareas (${tasks.length})</h2>
+        <button class="btn primary" onclick="taskModal()">+ Nueva tarea</button></div>
+      <table><tr><th>Título</th><th>Categoría</th><th>Puntos</th><th>Verif.</th><th>Estado</th><th></th></tr>
+      ${tasks.map(t => `<tr>
+        <td><b>${h(t.title)}</b><br><span style="color:var(--muted);font-size:12px">${h((t.description||'').slice(0,60))}</span></td>
+        <td>${h(CATS[t.category]||t.category)}</td><td>${t.points}</td>
+        <td>${h(t.verification)}</td><td>${pill(t.active?'active':'inactive')}</td>
+        <td><div class="row-actions">
+          <button class="btn ghost" onclick='taskModal(${JSON.stringify(t).replace(/'/g,"&#39;")})'>Editar</button>
+          <button class="btn ${t.active?'bad':'ok'}" onclick="toggleTask(${t.id},${t.active?0:1})">${t.active?'Desactivar':'Activar'}</button>
+          <button class="btn ghost" onclick="surveyModal(${t.id},'${h(t.title).replace(/&#39;/g,'').replace(/'/g,'')}')">Encuesta</button>
+        </div></td></tr>`).join('')}
+      </table>`;
+  } catch(e) { v.innerHTML = `<p class="error">Error: ${h(e.message)}</p>`; }
+}
+
+function taskModal(t) {
+  t = t || {};
+  openModal(`
+    <h3>${t.id ? 'Editar tarea' : 'Nueva tarea'}</h3>
+    <label>Título</label><input id="f_title" value="${h(t.title||'')}">
+    <label>Descripción</label><textarea id="f_desc" rows="2">${h(t.description||'')}</textarea>
+    <label>Instrucciones</label><textarea id="f_instr" rows="2">${h(t.instructions||'')}</textarea>
+    <label>Requisitos</label><input id="f_req" value="${h(t.requirements||'')}">
+    <label>URL destino (cuenta a seguir / enlace)</label><input id="f_url" value="${h(t.target_url||'')}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><label>Categoría</label><select id="f_cat">${Object.entries(CATS).map(([k,l])=>
+        `<option value="${k}" ${t.category===k?'selected':''}>${l}</option>`).join('')}</select></div>
+      <div><label>Puntos</label><input id="f_pts" type="number" min="1" value="${t.points||10}"></div>
+      <div><label>Minutos estimados</label><input id="f_min" type="number" min="1" value="${t.estimated_minutes||5}"></div>
+      <div><label>Máx. por usuario</label><input id="f_max" type="number" min="1" value="${t.max_completions_per_user||1}"></div>
+    </div>
+    <label>Verificación</label><select id="f_ver">
+      <option value="manual" ${t.verification==='manual'?'selected':''}>Manual (revisión del admin)</option>
+      <option value="auto" ${t.verification==='auto'?'selected':''}>Automática</option>
+    </select>
+    <div class="error" id="mErr"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+      <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveTask(${t.id||'null'})">Guardar</button>
+    </div>`);
+}
+async function saveTask(id) {
+  const body = { title:f_title.value, description:f_desc.value, instructions:f_instr.value,
+    requirements:f_req.value, target_url:f_url.value, category:f_cat.value,
+    points:parseInt(f_pts.value), estimated_minutes:parseInt(f_min.value),
+    max_completions_per_user:parseInt(f_max.value), verification:f_ver.value };
+  try {
+    id ? await req('PUT','/api/admin/tasks/'+id,body) : await req('POST','/api/admin/tasks',body);
+    closeModal(); vTareas();
+  } catch(e) { mErr.textContent = e.message; }
+}
+async function toggleTask(id, active) {
+  try { await req('PUT','/api/admin/tasks/'+id,{active:!!active}); vTareas(); }
+  catch(e){ alert(e.message); }
+}
+
+// ---- Encuesta de una tarea ----
+let QCOUNT = 0;
+function surveyModal(taskId, title) {
+  QCOUNT = 0;
+  openModal(`
+    <h3>Encuesta: ${h(title)}</h3>
+    <label>Título de la encuesta</label><input id="s_title" value="${h(title)}">
+    <div id="qlist"></div>
+    <button class="btn ghost" style="margin-top:10px" onclick="addQ()">+ Agregar pregunta</button>
+    <div class="error" id="mErr"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+      <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveSurvey(${taskId})">Guardar encuesta</button>
+    </div>`);
+  addQ();
+}
+function addQ() {
+  QCOUNT++;
+  const d = document.createElement('div');
+  d.className = 'q-row'; d.id = 'q'+QCOUNT;
+  d.innerHTML = `
+    <div class="qhead">
+      <select id="q${QCOUNT}_type" style="width:150px">
+        <option value="single">Selección única</option><option value="multiple">Múltiple</option>
+        <option value="yesno">Sí/No</option><option value="scale">Escala</option><option value="text">Texto</option>
+      </select>
+      <button class="btn bad" onclick="document.getElementById('q${QCOUNT}').remove()">Quitar</button>
+    </div>
+    <input type="text" id="q${QCOUNT}_text" placeholder="Texto de la pregunta">
+    <input type="text" id="q${QCOUNT}_opts" placeholder="Opciones separadas por coma (single/multiple)">
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <input type="number" id="q${QCOUNT}_min" value="1" style="width:80px" title="Mín (escala)">
+      <input type="number" id="q${QCOUNT}_max" value="5" style="width:80px" title="Máx (escala)">
+    </div>`;
+  document.getElementById('qlist').appendChild(d);
+}
+async function saveSurvey(taskId) {
+  const questions = [];
+  document.querySelectorAll('.q-row').forEach((el, i) => {
+    const n = el.id.replace('q','');
+    const type = document.getElementById('q'+n+'_type').value;
+    const q = { id:'q'+(i+1), type, text:document.getElementById('q'+n+'_text').value, required:true };
+    if (type==='single'||type==='multiple')
+      q.options = document.getElementById('q'+n+'_opts').value.split(',').map(s=>s.trim()).filter(Boolean);
+    if (type==='scale') { q.min=parseInt(document.getElementById('q'+n+'_min').value)||1; q.max=parseInt(document.getElementById('q'+n+'_max').value)||5; }
+    questions.push(q);
+  });
+  try {
+    await req('POST', `/api/admin/tasks/${taskId}/survey`, { title: s_title.value, questions });
+    closeModal(); alert('Encuesta guardada.');
+  } catch(e) { mErr.textContent = e.message; }
+}
+
+// ---- Verificaciones ----
+async function vVerif() {
+  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
+  try {
+    const {completions} = await req('GET', '/api/admin/completions?status=pending');
+    v.innerHTML = `
+      <div class="toolbar"><h2>Verificaciones pendientes (${completions.length})</h2>
+        <button class="btn ghost" onclick="vVerifHist()">Ver historial</button></div>
+      ${completions.length ? `<table><tr><th>ID</th><th>Tarea</th><th>Usuario</th><th>Puntos</th><th>Enviada</th><th></th></tr>
+      ${completions.map(c => `<tr>
+        <td>#${c.id}</td><td><b>${h(c.task_title)}</b></td>
+        <td>${h(c.user_name)}<br><span style="color:var(--muted);font-size:12px">${h(c.user_email)}</span></td>
+        <td>${c.task_points}</td><td>${h((c.submitted_at||'').slice(0,16).replace('T',' '))}</td>
+        <td><div class="row-actions">
+          <button class="btn ok" onclick="decide(${c.id},'approve')">Aprobar</button>
+          <button class="btn bad" onclick="decide(${c.id},'reject')">Rechazar</button>
+        </div></td></tr>`).join('')}</table>`
+      : '<div class="card">No hay verificaciones pendientes. 🎉</div>'}`;
+  } catch(e) { v.innerHTML = `<p class="error">Error: ${h(e.message)}</p>`; }
+}
+async function vVerifHist() {
+  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
+  const {completions} = await req('GET', '/api/admin/completions');
+  const done = completions.filter(c => c.status !== 'pending');
+  v.innerHTML = `<div class="toolbar"><h2>Historial de verificaciones</h2>
+      <button class="btn ghost" onclick="vVerif()">Volver a pendientes</button></div>
+    <table><tr><th>ID</th><th>Tarea</th><th>Usuario</th><th>Estado</th><th>Fecha</th></tr>
+    ${done.map(c => `<tr><td>#${c.id}</td><td>${h(c.task_title)}</td><td>${h(c.user_name)}</td>
+      <td>${pill(c.status)}</td><td>${h((c.reviewed_at||'').slice(0,16).replace('T',' '))}</td></tr>`).join('')}</table>`;
+}
+async function decide(id, action) {
+  try { await req('POST', `/api/admin/completions/${id}/${action}`, {}); vVerif(); }
+  catch(e){ alert(e.message); }
+}
+
+// ---- Usuarios ----
+async function vUsuarios() {
+  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
+  try {
+    const {users} = await req('GET', '/api/admin/users');
+    v.innerHTML = `
+      <div class="toolbar"><h2>Usuarios (${users.length})</h2></div>
+      <table><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Puntos</th><th>Nivel</th><th></th></tr>
+      ${users.map(u => `<tr>
+        <td><b>${h(u.name)}</b><br><span style="color:var(--muted);font-size:12px">${h(u.email)}</span></td>
+        <td>${h(u.role)}</td><td>${pill(u.status)}</td><td>${u.points}</td><td>${u.level}</td>
+        <td><div class="row-actions">
+          <button class="btn ghost" onclick="userRole(${u.id},'${u.role==='admin'?'user':'admin'}')">
+            ${u.role==='admin'?'Quitar admin':'Hacer admin'}</button>
+          <button class="btn ${u.status==='active'?'bad':'ok'}" onclick="userStatus(${u.id},'${u.status==='active'?'inactive':'active'}')">
+            ${u.status==='active'?'Desactivar':'Activar'}</button>
+        </div></td></tr>`).join('')}</table>`;
+  } catch(e) { v.innerHTML = `<p class="error">Error: ${h(e.message)}</p>`; }
+}
+async function userRole(id, role) {
+  if (!confirm('¿Cambiar rol a "'+role+'"?')) return;
+  try { await req('PATCH','/api/admin/users/'+id,{role}); vUsuarios(); } catch(e){ alert(e.message); }
+}
+async function userStatus(id, status) {
+  try { await req('PATCH','/api/admin/users/'+id,{status}); vUsuarios(); } catch(e){ alert(e.message); }
+}
+
+// ---- Canjes ----
+async function vCanjes() {
+  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
+  try {
+    const {redemptions} = await req('GET', '/api/admin/redemptions');
+    const pend = redemptions.filter(r => r.status==='pending');
+    v.innerHTML = `
+      <div class="toolbar"><h2>Canjes (${pend.length} pendientes)</h2></div>
+      <table><tr><th>ID</th><th>Usuario</th><th>Puntos</th><th>USD</th><th>Estado</th><th>Solicitado</th><th></th></tr>
+      ${redemptions.map(r => `<tr>
+        <td>#${r.id}</td><td>${h(r.user_name)}<br><span style="color:var(--muted);font-size:12px">${h(r.user_email)}</span></td>
+        <td>${r.points}</td><td>$${r.amount_usd.toFixed(2)}</td><td>${pill(r.status)}</td>
+        <td>${h((r.created_at||'').slice(0,16).replace('T',' '))}</td>
+        <td>${r.status==='pending' ? `<div class="row-actions">
+            <button class="btn ok" onclick="redeemDecide(${r.id},'complete')">Marcar pagado</button>
+            <button class="btn bad" onclick="redeemDecide(${r.id},'reject')">Rechazar</button>
+          </div>` : ''}</td></tr>`).join('')}</table>
+      <p class="note">Rechazar un canje devuelve los puntos al usuario (movimiento REVERSAL en el ledger).</p>`;
+  } catch(e) { v.innerHTML = `<p class="error">Error: ${h(e.message)}</p>`; }
+}
+async function redeemDecide(id, action) {
+  try { await req('POST', `/api/admin/redemptions/${id}/${action}`, {}); vCanjes(); }
+  catch(e){ alert(e.message); }
+}
+
+// ---- Configuración ----
+async function vConfig() {
+  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
+  try {
+    const c = await req('GET', '/api/config');
+    v.innerHTML = `
+      <div class="toolbar"><h2>Configuración</h2></div>
+      <div class="card" style="max-width:520px">
+        <label>Puntos por cada USD (conversión global)</label>
+        <input id="cfg_ppu" type="number" min="1" value="${c.points_per_usd}">
+        <p class="note">Ejemplo: 50 significa que 50 puntos = $1.00 USD.
+          La app y los canjes usan siempre este valor; nunca está hardcodeado.</p>
+        <div class="error" id="cfgErr"></div>
+        <button class="btn primary" style="margin-top:12px" onclick="saveCfg()">Guardar</button>
+      </div>`;
+  } catch(e) { v.innerHTML = `<p class="error">Error: ${h(e.message)}</p>`; }
+}
+async function saveCfg() {
+  try {
+    const ppu = parseInt(document.getElementById('cfg_ppu').value);
+    await req('PUT', '/api/admin/config', { points_per_usd: ppu });
+    alert('Conversión actualizada: ' + ppu + ' puntos = $1.00 USD');
+  } catch(e) { document.getElementById('cfgErr').textContent = e.message; }
+}
+
+// ---- Modal helpers ----
+function openModal(html) { document.getElementById('modalBox').innerHTML = html;
+  document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+document.getElementById('modal').addEventListener('click', e => { if (e.target.id==='modal') closeModal(); });
+
+// Auto-login si hay token guardado
+(async () => {
+  if (!TOKEN) return;
+  try {
+    const me = await req('GET', '/api/auth/me');
+    if (me.user.role !== 'admin') throw new Error('no admin');
+    document.getElementById('adminName').textContent = me.user.name;
+    enter();
+  } catch(e) { logout(); }
+})();
+</script>
+</body>
+</html>
