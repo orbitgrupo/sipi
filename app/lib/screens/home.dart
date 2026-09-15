@@ -126,19 +126,50 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: SipiColors.text)),
                       ]),
                   Row(children: [
-                    IconButton(
-                      onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => NotificationsScreen(session: s))),
-                      icon: const Icon(Icons.notifications_outlined),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius:
+                            BorderRadius.circular(SipiRadii.md),
+                        border:
+                            Border.all(color: SipiColors.border),
+                      ),
+                      child: IconButton(
+                        onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    NotificationsScreen(session: s))),
+                        icon: const Icon(Icons.notifications_outlined,
+                            size: 20),
+                        color: SipiColors.text,
+                      ),
                     ),
-                    const CircleAvatar(
-                      backgroundColor: SipiColors.primary,
-                      child: Text('A',
-                          style: TextStyle(
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF2F63F0),
+                            SipiColors.primaryDark
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius:
+                            BorderRadius.circular(SipiRadii.md),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                          s.firstName.isEmpty
+                              ? 'S'
+                              : s.firstName[0].toUpperCase(),
+                          style: const TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.w800)),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 18)),
                     ),
                   ]),
                 ],
@@ -215,18 +246,27 @@ class _CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 78,
+      width: 80,
       margin: const EdgeInsets.only(right: 10),
       child: Column(children: [
         Container(
-          width: 58,
-          height: 58,
+          width: 60,
+          height: 60,
           decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(18)),
+              gradient: LinearGradient(
+                colors: [
+                  color.withValues(alpha: 0.16),
+                  color.withValues(alpha: 0.07)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(SipiRadii.lg),
+              border: Border.all(
+                  color: color.withValues(alpha: 0.18), width: 1)),
           child: Icon(icon, color: color, size: 26),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 7),
         Text(label,
             style: const TextStyle(
                 fontSize: 12,

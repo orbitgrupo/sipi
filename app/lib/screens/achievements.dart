@@ -68,42 +68,79 @@ class _AchievementsScreenState extends State<AchievementsScreen>
               children: [
                 Padding(
                   padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 84,
-                        height: 84,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                              colors: [Color(0xFF7C5CFF), Color(0xFF4A2FD6)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight),
-                          borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                          BorderRadius.circular(SipiRadii.xl),
+                      border: Border.all(color: SipiColors.border),
+                      boxShadow: SipiShadows.card,
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 88,
+                          height: 88,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFF9D7BFF),
+                                  Color(0xFF4A2FD6)
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight),
+                            borderRadius:
+                                BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF7C5CFF)
+                                    .withValues(alpha: 0.35),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.emoji_events,
+                              color: Colors.white, size: 44),
                         ),
-                        child: const Icon(Icons.emoji_events,
-                            color: Colors.white, size: 44),
-                      ),
-                      const SizedBox(height: 10),
-                      Text('Nivel $level',
-                          style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: SipiColors.text)),
-                      Text(_levelName(level),
-                          style: const TextStyle(color: SipiColors.muted)),
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 8,
-                            backgroundColor: Colors.grey.shade200),
-                      ),
-                      const SizedBox(height: 6),
-                      Text('${earned % 1000} / 1,000 pts',
-                          style: const TextStyle(
-                              color: SipiColors.muted, fontSize: 12)),
-                    ],
+                        const SizedBox(height: 12),
+                        Text('Nivel $level',
+                            style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: SipiColors.text,
+                                letterSpacing: -0.3)),
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7C5CFF)
+                                .withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(_levelName(level),
+                              style: const TextStyle(
+                                  color: Color(0xFF4A2FD6),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13)),
+                        ),
+                        const SizedBox(height: 14),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: LinearProgressIndicator(
+                              value: progress,
+                              minHeight: 8,
+                              backgroundColor: SipiColors.border,
+                              color: const Color(0xFF7C5CFF)),
+                        ),
+                        const SizedBox(height: 8),
+                        Text('${earned % 1000} / 1,000 pts',
+                            style: const TextStyle(
+                                color: SipiColors.muted, fontSize: 12)),
+                      ],
+                    ),
                   ),
                 ),
                 Expanded(
@@ -135,35 +172,62 @@ class _AchievementsScreenState extends State<AchievementsScreen>
       itemBuilder: (_, i) {
         final a = _items[i];
         return Opacity(
-          opacity: a.earned ? 1 : 0.45,
-          child: Column(children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
+          opacity: a.earned ? 1 : 0.5,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(SipiRadii.lg),
+              border: Border.all(
                 color: a.earned
-                    ? SipiColors.primary.withValues(alpha: 0.12)
-                    : Colors.grey.shade200,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                a.earned ? Icons.verified : Icons.lock_outline,
-                color: a.earned ? SipiColors.primary : SipiColors.muted,
-                size: 30,
+                    ? SipiColors.primary.withValues(alpha: 0.25)
+                    : SipiColors.border,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(a.name,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: SipiColors.text)),
-            if (a.earned && a.bonusPoints > 0)
-              Text('+${a.bonusPoints} pts',
-                  style:
-                      const TextStyle(fontSize: 11, color: SipiColors.primary)),
-          ]),
+            child: Column(children: [
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  gradient: a.earned
+                      ? LinearGradient(colors: [
+                          SipiColors.primary.withValues(alpha: 0.16),
+                          SipiColors.primary.withValues(alpha: 0.06),
+                        ])
+                      : null,
+                  color: a.earned ? null : SipiColors.background,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  a.earned ? Icons.verified : Icons.lock_outline,
+                  color: a.earned ? SipiColors.primary : SipiColors.muted,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(a.name,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: SipiColors.text,
+                        height: 1.25)),
+              ),
+              if (a.earned && a.bonusPoints > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Text('+${a.bonusPoints} pts',
+                      style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: SipiColors.primary)),
+                ),
+            ]),
+          ),
         );
       },
     );
@@ -202,7 +266,7 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                 child: LinearProgressIndicator(
                     value: p,
                     minHeight: 6,
-                    backgroundColor: Colors.grey.shade200),
+                    backgroundColor: SipiColors.border),
               ),
               const SizedBox(height: 4),
               Text('${a.progress} / ${a.threshold}',

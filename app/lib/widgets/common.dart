@@ -120,24 +120,35 @@ class TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = taskIconBg(task.category);
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(SipiRadii.lg),
+        border: Border.all(color: SipiColors.border),
+        boxShadow: SipiShadows.soft,
+      ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(SipiRadii.lg),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
               Container(
-                width: 46,
-                height: 46,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                    color: bg.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(13)),
-                child: Icon(taskIcon(task.category), color: bg),
+                    gradient: LinearGradient(
+                      colors: [
+                        bg.withValues(alpha: 0.16),
+                        bg.withValues(alpha: 0.08)
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(SipiRadii.md)),
+                child: Icon(taskIcon(task.category), color: bg, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -145,21 +156,49 @@ class TaskCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(task.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
-                            color: SipiColors.text)),
-                    const SizedBox(height: 3),
-                    Text(
-                        '${CategoryMeta.label(task.category)} · ${task.estimatedMinutes} min',
-                        style: const TextStyle(
-                            color: SipiColors.muted, fontSize: 12)),
+                            color: SipiColors.text,
+                            height: 1.25)),
+                    const SizedBox(height: 4),
+                    Row(children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: bg.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(CategoryMeta.label(task.category),
+                            style: TextStyle(
+                                color: bg,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700)),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.schedule_outlined,
+                          size: 13, color: SipiColors.muted),
+                      const SizedBox(width: 3),
+                      Text('${task.estimatedMinutes} min',
+                          style: const TextStyle(
+                              color: SipiColors.muted, fontSize: 12)),
+                    ]),
                   ],
                 ),
               ),
-              PointsPill(points: task.points),
-              const SizedBox(width: 4),
-              const Icon(Icons.chevron_right, color: SipiColors.muted),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  PointsPill(points: task.points),
+                  const SizedBox(height: 6),
+                  const Icon(Icons.arrow_forward_ios,
+                      color: SipiColors.muted, size: 14),
+                ],
+              ),
             ],
           ),
         ),
@@ -175,41 +214,111 @@ class BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [SipiColors.primary, SipiColors.primaryDark],
+          colors: [Color(0xFF2F63F0), SipiColors.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Tus puntos',
-                  style: TextStyle(color: Colors.white70, fontSize: 13)),
-              Text('$_fmt(points)',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800)),
-              const SizedBox(height: 4),
-              Text('Te faltan ${100 - (points % 100)} pts para canjear \$1.00',
-                  style: const TextStyle(color: Colors.white70, fontSize: 11)),
-            ]),
+        borderRadius: BorderRadius.circular(SipiRadii.xl),
+        boxShadow: [
+          BoxShadow(
+            color: SipiColors.primary.withValues(alpha: 0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            const Text('Equivalente a',
-                style: TextStyle(color: Colors.white70, fontSize: 13)),
-            Text('\$${usd.toStringAsFixed(2)}',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800)),
-          ]),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Adornos decorativos.
+          Positioned(
+            right: -30,
+            top: -40,
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 30,
+            bottom: -55,
+            child: Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.06),
+              ),
+            ),
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.16),
+                            borderRadius:
+                                BorderRadius.circular(SipiRadii.sm),
+                          ),
+                          child: const Icon(Icons.stars_outlined,
+                              color: Colors.white, size: 16),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text('Tus puntos',
+                            style: TextStyle(
+                                color: Colors.white70, fontSize: 13)),
+                      ]),
+                      const SizedBox(height: 8),
+                      Text(_fmt(points),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 34,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5)),
+                      const SizedBox(height: 6),
+                      Text(
+                          'Te faltan ${100 - (points % 100)} pts para canjear \$1.00',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.75),
+                              fontSize: 11.5)),
+                    ]),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(SipiRadii.md),
+                ),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('Equivale a',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.75),
+                              fontSize: 11)),
+                      const SizedBox(height: 2),
+                      Text('\$${usd.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800)),
+                    ]),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -253,11 +362,20 @@ class EmptyState extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 56, color: SipiColors.muted.withValues(alpha: 0.5)),
-          const SizedBox(height: 12),
+          Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              color: SipiColors.primarySoft,
+              borderRadius: BorderRadius.circular(SipiRadii.xl),
+            ),
+            child: Icon(icon, size: 40, color: SipiColors.primary),
+          ),
+          const SizedBox(height: 14),
           Text(message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: SipiColors.muted)),
+              style: const TextStyle(
+                  color: SipiColors.muted, fontSize: 14, height: 1.4)),
         ]),
       ),
     );

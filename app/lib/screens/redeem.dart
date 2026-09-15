@@ -74,13 +74,38 @@ class _RedeemScreenState extends State<RedeemScreen> {
                     : null,
                 child: Opacity(
                   opacity: affordable ? 1 : 0.45,
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
                     decoration: BoxDecoration(
-                      color: selected ? SipiColors.primary : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: selected
-                          ? null
-                          : Border.all(color: Colors.grey.shade200),
+                      gradient: selected
+                          ? const LinearGradient(
+                              colors: [
+                                Color(0xFF2F63F0),
+                                SipiColors.primaryDark
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: selected ? null : Colors.white,
+                      borderRadius:
+                          BorderRadius.circular(SipiRadii.lg),
+                      border: Border.all(
+                        color: selected
+                            ? Colors.transparent
+                            : SipiColors.border,
+                        width: 1.2,
+                      ),
+                      boxShadow: selected
+                          ? [
+                              BoxShadow(
+                                color: SipiColors.primary
+                                    .withValues(alpha: 0.3),
+                                blurRadius: 14,
+                                offset: const Offset(0, 6),
+                              )
+                            ]
+                          : SipiShadows.soft,
                     ),
                     child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -88,17 +113,29 @@ class _RedeemScreenState extends State<RedeemScreen> {
                           Text('\$${o.usd.toStringAsFixed(2)}',
                               style: TextStyle(
                                   fontWeight: FontWeight.w800,
-                                  fontSize: 16,
+                                  fontSize: 17,
+                                  letterSpacing: -0.3,
                                   color: selected
                                       ? Colors.white
                                       : SipiColors.text)),
                           const SizedBox(height: 4),
-                          Text('${o.pts} puntos',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: selected
-                                      ? Colors.white70
-                                      : SipiColors.muted)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? Colors.white.withValues(alpha: 0.18)
+                                  : SipiColors.primarySoft,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text('${o.pts} pts',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: selected
+                                        ? Colors.white
+                                        : SipiColors.primary)),
+                          ),
                         ]),
                   ),
                 ),

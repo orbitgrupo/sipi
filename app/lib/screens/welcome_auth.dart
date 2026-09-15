@@ -17,24 +17,40 @@ class WelcomeScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(),
-              // Logo sin fotografía de personas: marca tipográfica + destello.
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Sipi',
-                      style: TextStyle(
-                          fontSize: 64,
-                          fontWeight: FontWeight.w900,
-                          color: SipiColors.text)),
-                  const SizedBox(width: 6),
-                  Icon(Icons.auto_awesome, color: SipiColors.primary, size: 30),
-                ],
+              // Logo sin fotografía de personas: insignia con gradiente + marca.
+              Container(
+                width: 92,
+                height: 92,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF2F63F0), SipiColors.primaryDark],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: SipiColors.primary.withValues(alpha: 0.35),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.auto_awesome,
+                    color: Colors.white, size: 44),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 18),
+              const Text('Sipi',
+                  style: TextStyle(
+                      fontSize: 44,
+                      fontWeight: FontWeight.w900,
+                      color: SipiColors.text,
+                      letterSpacing: -1)),
+              const SizedBox(height: 8),
               const Text('Tareas de hoy,\nrecompensas para mañana',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      fontSize: 17, color: SipiColors.muted, height: 1.4)),
+                      fontSize: 16, color: SipiColors.muted, height: 1.45)),
               const Spacer(),
               // Ilustración abstracta (sin personas): ondas.
               SizedBox(
