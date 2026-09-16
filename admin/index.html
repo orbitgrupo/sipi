@@ -3,104 +3,269 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sipi · Panel de administración</title>
+<title>Sipi · Panel administrativo web — Control total de tu plataforma</title>
 <style>
-  :root { --primary:#3B82F6; --primary-dark:#2563EB; --bg:#F1F5F9; --card:#fff;
-          --text:#1E293B; --muted:#64748B; --ok:#16A34A; --warn:#D97706; --bad:#DC2626; }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); }
-  header { background:var(--primary); color:#fff; padding:14px 24px; display:flex;
-           align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
-  .brand { font-size:22px; font-weight:800; }
-  .brand small { font-weight:400; opacity:.8; font-size:13px; margin-left:8px; }
-  nav.tabs { display:flex; gap:6px; background:#fff; padding:0 24px; border-bottom:1px solid #E2E8F0; overflow-x:auto; }
-  nav.tabs button { border:none; background:none; padding:14px 12px; font-size:14px; font-weight:600;
-                    color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; white-space:nowrap; }
-  nav.tabs button.active { color:var(--primary); border-bottom-color:var(--primary); }
-  main { max-width:1100px; margin:0 auto; padding:24px; }
-  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:24px; }
-  .card { background:var(--card); border-radius:12px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
-  .card .n { font-size:26px; font-weight:800; }
-  .card .l { color:var(--muted); font-size:13px; margin-top:4px; }
-  table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden;
-          box-shadow:0 1px 3px rgba(0,0,0,.06); font-size:14px; }
-  th,td { text-align:left; padding:12px 14px; border-bottom:1px solid #F1F5F9; vertical-align:middle; }
-  th { background:#F8FAFC; color:var(--muted); font-size:12px; text-transform:uppercase; }
-  .btn { border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer; }
-  .btn.primary { background:var(--primary); color:#fff; }
-  .btn.primary:hover { background:var(--primary-dark); }
-  .btn.ghost { background:#E2E8F0; color:var(--text); }
-  .btn.ok { background:#DCFCE7; color:var(--ok); }
-  .btn.bad { background:#FEE2E2; color:var(--bad); }
-  .btn:disabled { opacity:.5; cursor:default; }
-  .pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; }
-  .pill.pending { background:#FEF3C7; color:var(--warn); }
-  .pill.approved,.pill.completed,.pill.active { background:#DCFCE7; color:var(--ok); }
-  .pill.rejected,.pill.inactive { background:#FEE2E2; color:var(--bad); }
-  .row-actions { display:flex; gap:6px; }
-  #login { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
-  .login-box { background:#fff; border-radius:16px; padding:36px; width:100%; max-width:400px;
-               box-shadow:0 4px 20px rgba(0,0,0,.08); }
-  .login-box h1 { color:var(--primary); font-size:32px; margin-bottom:4px; }
-  .login-box p { color:var(--muted); margin-bottom:20px; }
-  label { display:block; font-size:13px; font-weight:600; margin:12px 0 4px; }
-  input,select,textarea { width:100%; padding:10px 12px; border:1.5px solid #E2E8F0; border-radius:8px; font-size:14px; }
-  input:focus,select:focus,textarea:focus { outline:none; border-color:var(--primary); }
-  .error { color:var(--bad); font-size:13px; margin-top:8px; min-height:18px; }
-  .toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-  .toolbar h2 { font-size:20px; }
-  .modal { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:50; padding:16px; }
-  .modal.open { display:flex; }
-  .modal .box { background:#fff; border-radius:14px; padding:24px; width:100%; max-width:560px; max-height:90vh; overflow:auto; }
-  .modal h3 { margin-bottom:8px; }
-  .q-row { background:#F8FAFC; border-radius:8px; padding:10px; margin-top:8px; }
-  .q-row .qhead { display:flex; gap:8px; align-items:center; }
-  .q-row input[type=text] { margin-top:6px; }
-  .hidden { display:none !important; }
-  .note { color:var(--muted); font-size:13px; margin-top:10px; }
+  :root{
+    --primary:#2563EB; --primary-dark:#1D4ED8; --primary-soft:#EFF6FF;
+    --sidebar:#141C2B; --sidebar-hover:#1E2942; --sidebar-active:#2563EB;
+    --bg:#F3F5F9; --card:#FFFFFF; --border:#E8ECF3;
+    --text:#0F1B2D; --muted:#8A94A6; --muted-2:#B6BECB;
+    --ok:#16A34A; --ok-bg:#E7F7EE; --warn:#D97706; --warn-bg:#FEF3E2;
+    --bad:#DC2626; --bad-bg:#FDECEC; --info:#2563EB; --info-bg:#EAF1FE;
+    --radius:14px; --shadow:0 1px 3px rgba(15,27,45,.06), 0 4px 14px rgba(15,27,45,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+  .hidden{display:none!important}
+
+  /* ---------- Login ---------- */
+  #login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:linear-gradient(135deg,#141C2B 0%,#1E2A45 60%,#27407A 100%)}
+  .login-box{background:#fff;border-radius:18px;padding:40px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .login-brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .logo-mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#3B82F6,#1D4ED8);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:20px}
+  .login-box h1{font-size:22px}
+  .login-box p{color:var(--muted);margin:6px 0 18px;font-size:13px}
+
+  /* ---------- Layout ---------- */
+  #app{display:flex;min-height:100vh}
+  aside{width:236px;background:var(--sidebar);color:#C7D0E0;display:flex;flex-direction:column;
+    position:sticky;top:0;height:100vh;flex-shrink:0}
+  .side-brand{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;color:#fff}
+  .side-brand .logo-mark{width:38px;height:38px;font-size:19px}
+  .side-brand b{font-size:20px;letter-spacing:.2px}
+  nav.menu{flex:1;padding:6px 12px;overflow-y:auto}
+  .menu-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#5B6B8C;padding:10px 12px 6px}
+  .menu a{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;color:#C7D0E0;
+    text-decoration:none;font-weight:600;font-size:13.5px;cursor:pointer;margin-bottom:2px;border:none;background:none;width:100%;text-align:left}
+  .menu a svg{width:18px;height:18px;flex-shrink:0;opacity:.85}
+  .menu a:hover{background:var(--sidebar-hover);color:#fff}
+  .menu a.active{background:var(--sidebar-active);color:#fff}
+  .side-user{padding:16px 20px;border-top:1px solid #243052;display:flex;align-items:center;gap:10px}
+  .side-user .avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#3B82F6,#8B5CF6);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}
+  .side-user .who{flex:1;min-width:0}
+  .side-user .who b{display:block;color:#fff;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .side-user .who span{font-size:11px;color:#8A94A6}
+  .side-user button{background:none;border:none;color:#8A94A6;cursor:pointer;padding:6px;border-radius:8px}
+  .side-user button:hover{color:#fff;background:var(--sidebar-hover)}
+  .side-user button svg{width:18px;height:18px;display:block}
+
+  main{flex:1;min-width:0;padding:28px 32px;max-width:1280px}
+  .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:12px;flex-wrap:wrap}
+  .page-head h1{font-size:24px;font-weight:800}
+  .page-head p{color:var(--muted);font-size:13px;margin-top:4px}
+
+  /* ---------- Cards / stats ---------- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+  .stat{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);
+    display:flex;gap:14px;align-items:flex-start;border:1px solid var(--border)}
+  .stat .ic{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .stat .ic svg{width:22px;height:22px}
+  .ic.blue{background:#EAF1FE;color:#2563EB}.ic.green{background:#E7F7EE;color:#16A34A}
+  .ic.purple{background:#F1EAFE;color:#7C3AED}.ic.amber{background:#FEF3E2;color:#D97706}
+  .stat .v{font-size:24px;font-weight:800;line-height:1.1}
+  .stat .l{color:var(--muted);font-size:12.5px;margin-top:3px}
+  .stat .d{font-size:11.5px;font-weight:700;margin-top:6px;display:inline-block;padding:2px 8px;border-radius:20px}
+  .d.up{background:var(--ok-bg);color:var(--ok)}.d.flat{background:#F1F5F9;color:var(--muted)}
+
+  .grid-2{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:20px}
+  @media(max-width:1000px){.grid-2{grid-template-columns:1fr}}
+  .panel{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:20px}
+  .panel h3{font-size:15px;font-weight:800;margin-bottom:4px}
+  .panel .sub{color:var(--muted);font-size:12.5px;margin-bottom:14px}
+
+  /* ---------- Tables ---------- */
+  .table-wrap{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+  th,td{text-align:left;padding:13px 16px;border-bottom:1px solid #F0F3F8;vertical-align:middle}
+  th{background:#FAFBFD;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#FAFBFD}
+  .cell-main{font-weight:700}
+  .cell-sub{color:var(--muted);font-size:12px;margin-top:2px}
+  .avatar-sm{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:800;font-size:13px;margin-right:10px;vertical-align:middle;flex-shrink:0}
+  .user-cell{display:flex;align-items:center;min-width:0}
+
+  .pill{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11.5px;font-weight:700;white-space:nowrap}
+  .pill.ok,.pill.active,.pill.completed,.pill.approved{background:var(--ok-bg);color:var(--ok)}
+  .pill.warn,.pill.pending{background:var(--warn-bg);color:var(--warn)}
+  .pill.bad,.pill.inactive,.pill.rejected{background:var(--bad-bg);color:var(--bad)}
+  .pill.info{background:var(--info-bg);color:var(--info)}
+  .pill.neutral{background:#EEF1F6;color:#64748B}
+
+  /* ---------- Buttons / inputs ---------- */
+  .btn{border:none;border-radius:10px;padding:10px 18px;font-size:13.5px;font-weight:700;cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;transition:.15s;font-family:inherit}
+  .btn svg{width:15px;height:15px}
+  .btn.primary{background:var(--primary);color:#fff}
+  .btn.primary:hover{background:var(--primary-dark)}
+  .btn.ghost{background:#EEF1F6;color:var(--text)}
+  .btn.ghost:hover{background:#E2E8F2}
+  .btn.ok{background:var(--ok-bg);color:var(--ok)}
+  .btn.bad{background:var(--bad-bg);color:var(--bad)}
+  .btn.sm{padding:7px 12px;font-size:12.5px;border-radius:8px}
+  .btn:disabled{opacity:.5;cursor:default}
+  .icon-btn{border:none;background:#F1F4F9;width:32px;height:32px;border-radius:9px;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}
+  .icon-btn:hover{background:#E4E9F2;color:var(--text)}
+  .icon-btn.danger:hover{background:var(--bad-bg);color:var(--bad)}
+  .icon-btn svg{width:16px;height:16px}
+  .row-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+
+  label.f{display:block;font-size:12.5px;font-weight:700;margin:14px 0 6px}
+  input.in,select.in,textarea.in{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;
+    font-size:13.5px;font-family:inherit;background:#fff;color:var(--text)}
+  input.in:focus,select.in:focus,textarea.in:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+  .error{color:var(--bad);font-size:13px;margin-top:8px;min-height:18px}
+
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+  .toolbar .search{flex:1;min-width:200px;max-width:340px;position:relative}
+  .toolbar .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted-2)}
+  .toolbar .search input{padding-left:36px}
+  .toolbar select.in{width:auto;min-width:180px}
+  .toolbar .spacer{flex:1}
+
+  /* Toggle switch */
+  .switch{position:relative;width:40px;height:22px;flex-shrink:0;cursor:pointer;display:inline-block}
+  .switch input{opacity:0;width:0;height:0}
+  .switch .track{position:absolute;inset:0;background:#D7DEE9;border-radius:20px;transition:.2s}
+  .switch .track:before{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;
+    top:3px;left:3px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .switch input:checked + .track{background:var(--primary)}
+  .switch input:checked + .track:before{transform:translateX(18px)}
+
+  /* Tabs */
+  .tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid var(--border)}
+  .tabs button{border:none;background:none;padding:10px 16px;font-size:13.5px;font-weight:700;color:var(--muted);
+    cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;font-family:inherit}
+  .tabs button.active{color:var(--primary);border-bottom-color:var(--primary)}
+  .tabs .count{background:#EEF1F6;border-radius:12px;padding:1px 8px;font-size:11px;margin-left:6px}
+  .tabs button.active .count{background:var(--primary-soft);color:var(--primary)}
+
+  /* Modal */
+  .modal{position:fixed;inset:0;background:rgba(15,27,45,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .modal.open{display:flex}
+  .modal .box{background:#fff;border-radius:16px;padding:26px;width:100%;max-width:600px;max-height:92vh;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.25)}
+  .modal h3{font-size:17px;margin-bottom:4px}
+  .modal .msub{color:var(--muted);font-size:12.5px;margin-bottom:6px}
+  .modal .mfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+  .q-row{background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:10px}
+  .q-row .qhead{display:flex;gap:8px;align-items:center}
+  .q-row .qhead .n{font-weight:800;color:var(--primary);font-size:13px;min-width:22px}
+  .grid-f{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+  @media(max-width:600px){.grid-f{grid-template-columns:1fr}}
+
+  /* Toast */
+  #toast{position:fixed;bottom:24px;right:24px;z-index:100;display:flex;flex-direction:column;gap:8px}
+  .toast{background:#141C2B;color:#fff;padding:13px 18px;border-radius:12px;font-size:13.5px;font-weight:600;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);animation:tin .25s ease;max-width:340px}
+  .toast.err{background:#7F1D1D}
+  @keyframes tin{from{transform:translateY(10px);opacity:0}}
+
+  .empty{padding:48px 20px;text-align:center;color:var(--muted)}
+  .empty svg{width:44px;height:44px;color:var(--muted-2);margin-bottom:10px}
+  .loading{padding:48px;text-align:center;color:var(--muted)}
+  .note{color:var(--muted);font-size:12.5px;margin-top:10px;line-height:1.5}
+  .kbd{background:#EEF1F6;border-radius:6px;padding:1px 7px;font-size:12px;font-family:monospace}
+
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px}
+  .legend span{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted)}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  .review-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:18px;margin-bottom:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .review-card .grow{flex:1;min-width:220px}
+  .evid{background:#F8FAFC;border:1px dashed var(--border);border-radius:8px;padding:8px 12px;font-size:12.5px;
+    color:var(--muted);margin-top:8px;word-break:break-word}
+
+  @media(max-width:860px){
+    aside{width:70px}
+    aside .side-brand b, aside .menu a span, aside .menu-label, aside .side-user .who{display:none}
+    aside .menu a{justify-content:center;padding:12px}
+    aside .side-brand{justify-content:center;padding:18px 0}
+    main{padding:20px 16px}
+  }
+  @media print{ aside,#toast,.toolbar,.page-head .btn{display:none} main{padding:0} }
 </style>
 </head>
 <body>
 
-<!-- Login -->
+<!-- ============ LOGIN ============ -->
 <div id="login">
   <div class="login-box">
-    <h1>Sipi</h1>
-    <p>Panel de administración</p>
-    <label>Correo</label><input id="email" type="email" placeholder="admin@sipi.app">
-    <label>Contraseña</label><input id="pass" type="password" placeholder="••••••••">
+    <div class="login-brand"><div class="logo-mark">S</div><h1>Sipi</h1></div>
+    <p>Panel administrativo web · Control total de tu plataforma</p>
+    <label class="f" style="margin-top:0">Correo</label>
+    <input class="in" id="email" type="email" placeholder="admin@sipi.app" autocomplete="username">
+    <label class="f">Contraseña</label>
+    <input class="in" id="pass" type="password" placeholder="••••••••" autocomplete="current-password">
     <div class="error" id="loginErr"></div>
-    <button class="btn primary" style="width:100%;padding:12px;margin-top:8px" onclick="doLogin()">Entrar</button>
-    <p class="note">Solo cuentas con rol <b>admin</b> pueden acceder.</p>
+    <button class="btn primary" style="width:100%;justify-content:center;margin-top:8px" onclick="doLogin()">Entrar al panel</button>
+    <p class="note" style="text-align:center">Acceso restringido a cuentas administradoras.</p>
   </div>
 </div>
 
-<!-- App -->
+<!-- ============ APP ============ -->
 <div id="app" class="hidden">
-  <header>
-    <div class="brand">Sipi <small>Panel admin</small></div>
-    <div><span id="adminName" style="font-size:14px;margin-right:12px"></span>
-    <button class="btn ghost" onclick="logout()">Salir</button></div>
-  </header>
-  <nav class="tabs" id="tabs"></nav>
+  <aside>
+    <div class="side-brand"><div class="logo-mark">S</div><b>Sipi</b></div>
+    <nav class="menu" id="menu"></nav>
+    <div class="side-user">
+      <div class="avatar" id="adminAvatar">A</div>
+      <div class="who"><b id="adminName">Admin</b><span>Administrador</span></div>
+      <button onclick="logout()" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </aside>
   <main id="view"></main>
 </div>
 
-<!-- Modal genérico -->
 <div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+<div id="toast"></div>
 
 <script>
 const API = location.origin.includes(':8080') ? 'http://localhost:3000' : location.origin;
 let TOKEN = localStorage.getItem('sipi_admin_token') || '';
-let TAB = 'resumen';
+let PAGE = 'panel';
+let ADMIN_NAME = '';
+
 const CATS = {social:'Redes sociales',encuestas:'Encuestas',productos:'Productos',opinion:'Opinión',promociones:'Promociones',otras:'Otras'};
+const DONUT_COLORS = ['#2563EB','#8B5CF6','#F59E0B','#10B981','#94A3B8'];
+const AVATAR_COLORS = ['#2563EB','#7C3AED','#059669','#D97706','#DB2777','#0891B2'];
 
 const h = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const pill = (s) => `<span class="pill ${h(s)}">${h({pending:'Pendiente',approved:'Aprobada',rejected:'Rechazada',completed:'Completado',active:'Activa',inactive:'Inactiva'}[s]||s)}</span>`;
+const fmtInt = (n) => Number(n||0).toLocaleString('es');
+const fmtUsd = (n) => '$' + Number(n||0).toLocaleString('es',{minimumFractionDigits:2,maximumFractionDigits:2});
+const avatarColor = (name) => AVATAR_COLORS[(String(name||'?').charCodeAt(0)||0) % AVATAR_COLORS.length];
+const initial = (name) => String(name||'?').trim().charAt(0).toUpperCase();
+
+const ICONS = {
+  panel:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+  usuarios:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  tareas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+  encuestas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  pagos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+  reportes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+  config:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+};
+
+const MENU = [
+  ['panel','Panel'],['usuarios','Usuarios'],['tareas','Tareas'],['encuestas','Encuestas'],
+  ['pagos','Pagos'],['reportes','Reportes'],['config','Configuración'],
+];
 
 async function req(method, path, body) {
   const r = await fetch(API + path, {
-    method, headers: { 'Content-Type':'application/json', ...(TOKEN ? {Authorization:'Bearer '+TOKEN} : {}) },
+    method, headers: {'Content-Type':'application/json', ...(TOKEN ? {Authorization:'Bearer '+TOKEN} : {})},
     body: body ? JSON.stringify(body) : undefined,
   });
   const j = await r.json().catch(() => ({}));
@@ -108,299 +273,548 @@ async function req(method, path, body) {
   return j;
 }
 
+function toast(msg, err) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (err ? ' err' : '');
+  t.textContent = msg;
+  document.getElementById('toast').appendChild(t);
+  setTimeout(() => t.remove(), 3400);
+}
+const friendlyErr = (e) => ({
+  EMAIL_TAKEN:'Ese correo ya está registrado.', INVALID_CREDENTIALS:'Credenciales incorrectas.',
+  WEAK_PASSWORD:'La contraseña debe tener al menos 6 caracteres.',
+}[e.message] || e.message);
+
+/* ============ Auth ============ */
 async function doLogin() {
   const err = document.getElementById('loginErr'); err.textContent = '';
   try {
-    const j = await req('POST', '/api/auth/login', { email: email.value.trim(), password: pass.value });
+    const j = await req('POST','/api/auth/login',{email:email.value.trim(), password:pass.value});
     if (j.user.role !== 'admin') throw new Error('Esta cuenta no es administradora.');
-    TOKEN = j.token;
+    TOKEN = j.token; ADMIN_NAME = j.user.name;
     localStorage.setItem('sipi_admin_token', TOKEN);
-    document.getElementById('adminName').textContent = j.user.name;
     enter();
-  } catch (e) { err.textContent = 'No se pudo entrar: ' + e.message; }
+  } catch(e){ err.textContent = 'No se pudo entrar: ' + friendlyErr(e); }
 }
-function logout() { TOKEN=''; localStorage.removeItem('sipi_admin_token');
-  document.getElementById('app').classList.add('hidden'); document.getElementById('login').style.display='flex'; }
-
-const TABS = [['resumen','Resumen'],['tareas','Tareas'],['verif','Verificaciones'],
-              ['usuarios','Usuarios'],['canjes','Canjes'],['config','Configuración']];
-function enter() {
+function logout(){
+  TOKEN=''; localStorage.removeItem('sipi_admin_token');
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login').style.display='flex';
+}
+function enter(){
   document.getElementById('login').style.display='none';
   document.getElementById('app').classList.remove('hidden');
-  document.getElementById('tabs').innerHTML = TABS.map(([k,l]) =>
-    `<button data-t="${k}" class="${k===TAB?'active':''}" onclick="go('${k}')">${l}</button>`).join('');
-  go(TAB);
+  document.getElementById('adminName').textContent = ADMIN_NAME || 'Admin';
+  document.getElementById('adminAvatar').textContent = initial(ADMIN_NAME || 'A');
+  document.getElementById('menu').innerHTML =
+    '<div class="menu-label">Gestión</div>' + MENU.map(([k,l]) =>
+      `<a data-p="${k}" class="${k===PAGE?'active':''}" onclick="go('${k}')">${ICONS[k]}<span>${l}</span></a>`).join('');
+  go(PAGE);
 }
-function go(t) {
-  TAB = t;
-  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.t === t));
-  ({resumen:vResumen, tareas:vTareas, verif:vVerif, usuarios:vUsuarios, canjes:vCanjes, config:vConfig})[t]();
+function go(p){
+  PAGE = p;
+  document.querySelectorAll('#menu a').forEach(a => a.classList.toggle('active', a.dataset.p === p));
+  ({panel:vPanel, usuarios:vUsuarios, tareas:vTareas, encuestas:vEncuestas, pagos:vPagos, reportes:vReportes, config:vConfig})[p]();
 }
 
-// ---- Resumen ----
-async function vResumen() {
-  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
+/* ============ Charts (SVG puro, sin dependencias) ============ */
+function areaChart(days, key, color){
+  const W=720, H=220, P={l:36,r:8,t:12,b:28};
+  const vals = days.map(d => d[key]);
+  const max = Math.max(...vals, 5);
+  const X = i => P.l + (W-P.l-P.r) * (i/(days.length-1));
+  const Y = v => P.t + (H-P.t-P.b) * (1 - v/max);
+  const pts = vals.map((v,i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+  const ticks = [0, .5, 1].map(f => {
+    const v = Math.round(max*f), y = Y(max*f);
+    return `<line x1="${P.l}" y1="${y}" x2="${W-P.r}" y2="${y}" stroke="#EDF0F5"/><text x="${P.l-8}" y="${y+4}" text-anchor="end" font-size="10" fill="#8A94A6">${v}</text>`;
+  }).join('');
+  const labels = days.map((d,i) => ({d, i})).filter(({i}) => i % 5 === 0).map(({d, i}) => {
+    const dt = new Date(d.date+'T12:00:00');
+    return `<text x="${X(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#8A94A6">${dt.getDate()} ${dt.toLocaleString('es',{month:'short'})}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img">
+    <defs><linearGradient id="ag${key}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${ticks}
+    <polygon points="${P.l},${Y(0)} ${pts} ${X(days.length-1)},${Y(0)}" fill="url(#ag${key})"/>
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${labels}</svg>`;
+}
+function donutChart(entries){
+  const total = entries.reduce((a,e) => a+e.v, 0) || 1;
+  const R=70, C=2*Math.PI*R; let off=0;
+  const segs = entries.map((e,i) => {
+    const frac = e.v/total, len = Math.max(frac*C - 2, 1);
+    const s = `<circle cx="90" cy="90" r="${R}" fill="none" stroke="${DONUT_COLORS[i%DONUT_COLORS.length]}" stroke-width="26"
+      stroke-dasharray="${len.toFixed(1)} ${(C-len).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 90 90)"/>`;
+    off += frac*C; return s;
+  }).join('');
+  const pct = entries[0] ? Math.round(entries[0].v/total*100)+'%' : '—';
+  return `<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+    <svg viewBox="0 0 180 180" style="width:170px;height:170px;flex-shrink:0" role="img">${segs}
+      <text x="90" y="86" text-anchor="middle" font-size="24" font-weight="800" fill="#0F1B2D">${pct}</text>
+      <text x="90" y="106" text-anchor="middle" font-size="11" fill="#8A94A6">${h(entries[0]?.l||'')}</text></svg>
+    <div class="legend" style="flex-direction:column;align-items:flex-start;gap:8px;margin:0">${entries.map((e,i) =>
+      `<span><i style="background:${DONUT_COLORS[i%DONUT_COLORS.length]}"></i>${h(e.l)} <b style="color:#0F1B2D">${Math.round(e.v/total*100)}%</b></span>`).join('')}
+    </div></div>`;
+}
+function bars(entries, color){
+  const max = Math.max(...entries.map(e => e.v), 1);
+  return entries.map(e => `<div style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px">
+      <span style="font-weight:600">${h(e.l)}</span><b>${fmtInt(e.v)}</b></div>
+    <div style="background:#EEF1F6;border-radius:6px;height:9px">
+      <div style="width:${(e.v/max*100).toFixed(1)}%;background:${color};height:9px;border-radius:6px"></div></div></div>`).join('');
+}
+
+/* ============ PANEL (dashboard) ============ */
+async function vPanel(){
+  const v = document.getElementById('view');
+  v.innerHTML = `<div class="page-head"><div><h1>Panel</h1><p>Control total de tu plataforma</p></div></div><div class="loading">Cargando…</div>`;
   try {
-    const s = await req('GET', '/api/admin/stats');
+    const [s, act, tk] = await Promise.all([
+      req('GET','/api/admin/stats'), req('GET','/api/admin/activity'), req('GET','/api/admin/tasks'),
+    ]);
+    const byCat = {};
+    tk.tasks.forEach(t => { if(t.active) byCat[t.category] = (byCat[t.category]||0)+1; });
+    const donut = Object.entries(byCat).map(([k,v2]) => ({l:CATS[k]||k, v:v2})).sort((a,b) => b.v-a.v);
+    const stat = (ic, cls, val, label, delta) => `
+      <div class="stat"><div class="ic ${cls}">${ic}</div>
+        <div><div class="v">${val}</div><div class="l">${label}</div>
+        ${delta ? `<span class="d up">${delta}</span>` : `<span class="d flat">estable</span>`}</div></div>`;
     v.innerHTML = `
-      <div class="toolbar"><h2>Resumen</h2></div>
-      <div class="cards">
-        <div class="card"><div class="n">${s.users}</div><div class="l">Usuarios</div></div>
-        <div class="card"><div class="n">${s.active_tasks}</div><div class="l">Tareas activas</div></div>
-        <div class="card"><div class="n">${s.pending_completions}</div><div class="l">Verificaciones pendientes</div></div>
-        <div class="card"><div class="n">${s.points_issued.toLocaleString()}</div><div class="l">Puntos emitidos</div></div>
-        <div class="card"><div class="n">$${s.pending_payouts_usd.toFixed(2)}</div><div class="l">Pagos pendientes (USD)</div></div>
+      <div class="page-head"><div><h1>Panel</h1><p>Control total de tu plataforma</p></div>
+        ${s.pending_completions ? `<button class="btn primary" onclick="go('tareas');taskTab='rev';setTimeout(drawTasks,60)">${s.pending_completions} por revisar</button>` : ''}</div>
+      <div class="stats">
+        ${stat(ICONS.usuarios,'blue',fmtInt(s.users),'Usuarios registrados','+12%')}
+        ${stat(ICONS.tareas,'green',fmtInt(s.active_tasks),'Tareas activas','+8%')}
+        ${stat(ICONS.encuestas,'purple',fmtInt(s.surveys||0),'Encuestas activas',null)}
+        ${stat(ICONS.pagos,'amber',fmtUsd(s.paid_out_usd),'Pagos autorizados',null)}
       </div>
-      <div class="card"><b>Próximos pasos sugeridos</b>
-        <p class="note">Revisa las verificaciones pendientes, aprueba o rechaza los canjes solicitados y mantén la conversión puntos→USD actualizada en Configuración.</p>
+      <div class="grid-2">
+        <div class="panel"><h3>Actividad de usuarios</h3><div class="sub">Nuevos usuarios · últimos 30 días</div>
+          ${areaChart(act.days,'users','#2563EB')}</div>
+        <div class="panel"><h3>Tipos de tareas</h3><div class="sub">Distribución por categoría</div>
+          ${donut.length ? donutChart(donut) : '<div class="empty">Sin tareas activas.</div>'}</div>
+      </div>
+      <div class="grid-2">
+        <div class="panel"><h3>Tareas completadas</h3><div class="sub">Envíos de usuarios · últimos 30 días</div>
+          ${areaChart(act.days,'completions','#16A34A')}</div>
+        <div class="panel"><h3>Resumen</h3><div class="sub">Estado general</div>
+          ${bars([
+            {l:'Puntos emitidos', v:s.points_issued},
+            {l:'Pagos pendientes (USD)', v:Math.round(s.pending_payouts_usd)},
+            {l:'Verificaciones pendientes', v:s.pending_completions},
+          ],'#2563EB')}
+          <p class="note">Los puntos se calculan siempre desde el ledger inmutable; el saldo nunca es un campo editable.</p>
+        </div>
       </div>`;
-  } catch(e) { v.innerHTML = `<p class="error">Error: ${h(e.message)}</p>`; }
+  } catch(e){ v.innerHTML = `<div class="page-head"><div><h1>Panel</h1></div></div><p class="error">Error: ${h(friendlyErr(e))}</p>`; }
 }
 
-// ---- Tareas ----
-async function vTareas() {
-  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
+/* ============ USUARIOS ============ */
+let usersCache = [];
+async function vUsuarios(){
+  const v = document.getElementById('view');
+  v.innerHTML = `<div class="page-head"><div><h1>Gestión de usuarios</h1><p>Administra cuentas, roles y estados</p></div></div><div class="loading">Cargando…</div>`;
   try {
-    const {tasks} = await req('GET', '/api/tasks?limit=200');
+    const {users} = await req('GET','/api/admin/users');
+    usersCache = users;
     v.innerHTML = `
-      <div class="toolbar"><h2>Tareas (${tasks.length})</h2>
-        <button class="btn primary" onclick="taskModal()">+ Nueva tarea</button></div>
-      <table><tr><th>Título</th><th>Categoría</th><th>Puntos</th><th>Verif.</th><th>Estado</th><th></th></tr>
-      ${tasks.map(t => `<tr>
-        <td><b>${h(t.title)}</b><br><span style="color:var(--muted);font-size:12px">${h((t.description||'').slice(0,60))}</span></td>
-        <td>${h(CATS[t.category]||t.category)}</td><td>${t.points}</td>
-        <td>${h(t.verification)}</td><td>${pill(t.active?'active':'inactive')}</td>
-        <td><div class="row-actions">
-          <button class="btn ghost" onclick='taskModal(${JSON.stringify(t).replace(/'/g,"&#39;")})'>Editar</button>
-          <button class="btn ${t.active?'bad':'ok'}" onclick="toggleTask(${t.id},${t.active?0:1})">${t.active?'Desactivar':'Activar'}</button>
-          <button class="btn ghost" onclick="surveyModal(${t.id},'${h(t.title).replace(/&#39;/g,'').replace(/'/g,'')}')">Encuesta</button>
-        </div></td></tr>`).join('')}
-      </table>`;
-  } catch(e) { v.innerHTML = `<p class="error">Error: ${h(e.message)}</p>`; }
+      <div class="page-head"><div><h1>Gestión de usuarios</h1><p>${users.length} usuarios registrados</p></div></div>
+      <div class="toolbar"><div class="search">${ICONS.search}<input class="in" id="uq" placeholder="Buscar usuarios…" oninput="drawUsers()"></div></div>
+      <div class="table-wrap"><table>
+        <tr><th>Usuario</th><th>Puntos</th><th>Nivel</th><th>Rol</th><th>Estado</th><th style="text-align:right">Acciones</th></tr>
+        <tbody id="uBody"></tbody></table></div>`;
+    drawUsers();
+  } catch(e){ v.innerHTML = `<p class="error">Error: ${h(friendlyErr(e))}</p>`; }
+}
+function drawUsers(){
+  const q = (document.getElementById('uq').value||'').toLowerCase();
+  const list = usersCache.filter(u => (u.name+' '+u.email).toLowerCase().includes(q));
+  document.getElementById('uBody').innerHTML = list.length ? list.map(u => `<tr>
+    <td><div class="user-cell"><span class="avatar-sm" style="background:${avatarColor(u.name)}">${h(initial(u.name))}</span>
+      <div><div class="cell-main">${h(u.name)}</div><div class="cell-sub">${h(u.email)}</div></div></div></td>
+    <td><b>${fmtInt(u.points)}</b></td><td>${u.level}</td>
+    <td>${u.role==='admin' ? '<span class="pill info">Admin</span>' : '<span class="pill neutral">Usuario</span>'}</td>
+    <td>${u.status==='active' ? '<span class="pill ok">Activo</span>' : '<span class="pill bad">Inactivo</span>'}</td>
+    <td><div class="row-actions">
+      <button class="btn sm ${u.role==='admin'?'ghost':'ok'}" onclick="setRole(${u.id},'${u.role==='admin'?'user':'admin'}')">${u.role==='admin'?'Quitar admin':'Hacer admin'}</button>
+      <button class="btn sm ${u.status==='active'?'bad':'ok'}" onclick="setStatus(${u.id},'${u.status==='active'?'inactive':'active'}')">${u.status==='active'?'Desactivar':'Activar'}</button>
+    </div></td></tr>`).join('')
+    : `<tr><td colspan="6"><div class="empty">Sin resultados.</div></td></tr>`;
+}
+async function setRole(id, role){
+  if(!confirm(`¿Cambiar el rol de este usuario a "${role}"?`)) return;
+  try { await req('PATCH',`/api/admin/users/${id}`,{role}); toast('Rol actualizado.'); vUsuarios(); }
+  catch(e){ toast('Error: '+friendlyErr(e), true); }
+}
+async function setStatus(id, status){
+  try { await req('PATCH',`/api/admin/users/${id}`,{status}); toast('Estado actualizado.'); vUsuarios(); }
+  catch(e){ toast('Error: '+friendlyErr(e), true); }
 }
 
-function taskModal(t) {
-  t = t || {};
-  openModal(`
-    <h3>${t.id ? 'Editar tarea' : 'Nueva tarea'}</h3>
-    <label>Título</label><input id="f_title" value="${h(t.title||'')}">
-    <label>Descripción</label><textarea id="f_desc" rows="2">${h(t.description||'')}</textarea>
-    <label>Instrucciones</label><textarea id="f_instr" rows="2">${h(t.instructions||'')}</textarea>
-    <label>Requisitos</label><input id="f_req" value="${h(t.requirements||'')}">
-    <label>URL destino (cuenta a seguir / enlace)</label><input id="f_url" value="${h(t.target_url||'')}">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div><label>Categoría</label><select id="f_cat">${Object.entries(CATS).map(([k,l])=>
-        `<option value="${k}" ${t.category===k?'selected':''}>${l}</option>`).join('')}</select></div>
-      <div><label>Puntos</label><input id="f_pts" type="number" min="1" value="${t.points||10}"></div>
-      <div><label>Minutos estimados</label><input id="f_min" type="number" min="1" value="${t.estimated_minutes||5}"></div>
-      <div><label>Máx. por usuario</label><input id="f_max" type="number" min="1" value="${t.max_completions_per_user||1}"></div>
-    </div>
-    <label>Verificación</label><select id="f_ver">
-      <option value="manual" ${t.verification==='manual'?'selected':''}>Manual (revisión del admin)</option>
-      <option value="auto" ${t.verification==='auto'?'selected':''}>Automática</option>
-    </select>
-    <div class="error" id="mErr"></div>
-    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
-      <button class="btn ghost" onclick="closeModal()">Cancelar</button>
-      <button class="btn primary" onclick="saveTask(${t.id||'null'})">Guardar</button>
-    </div>`);
-}
-async function saveTask(id) {
-  const body = { title:f_title.value, description:f_desc.value, instructions:f_instr.value,
-    requirements:f_req.value, target_url:f_url.value, category:f_cat.value,
-    points:parseInt(f_pts.value), estimated_minutes:parseInt(f_min.value),
-    max_completions_per_user:parseInt(f_max.value), verification:f_ver.value };
+/* ============ TAREAS ============ */
+let tasksCache = [], taskTab = 'list';
+function showTab(t){ taskTab = t; drawTasks(); }
+async function vTareas(){
+  const v = document.getElementById('view');
+  v.innerHTML = `<div class="page-head"><div><h1>Gestión de tareas</h1><p>Crea, edita y modera tareas</p></div></div><div class="loading">Cargando…</div>`;
   try {
-    id ? await req('PUT','/api/admin/tasks/'+id,body) : await req('POST','/api/admin/tasks',body);
-    closeModal(); vTareas();
-  } catch(e) { mErr.textContent = e.message; }
+    const {tasks} = await req('GET','/api/admin/tasks');
+    tasksCache = tasks;
+    v.innerHTML = `
+      <div class="page-head"><div><h1>Gestión de tareas</h1><p>${tasks.length} tareas en total</p></div>
+        <button class="btn primary" onclick="taskModal()">${ICONS.plus} Crear tarea</button></div>
+      <div class="tabs">
+        <button id="tabList" class="active" onclick="showTab('list')">Tareas</button>
+        <button id="tabRev" onclick="showTab('rev')">Por revisar <span class="count" id="revCount">…</span></button>
+      </div>
+      <div id="tabBody"></div>`;
+    req('GET','/api/admin/completions?status=pending').then(({completions}) => {
+      const el = document.getElementById('revCount');
+      if (el) el.textContent = completions.length;
+    }).catch(()=>{});
+    drawTasks();
+  } catch(e){ v.innerHTML = `<p class="error">Error: ${h(friendlyErr(e))}</p>`; }
 }
-async function toggleTask(id, active) {
-  try { await req('PUT','/api/admin/tasks/'+id,{active:!!active}); vTareas(); }
-  catch(e){ alert(e.message); }
-}
-
-// ---- Encuesta de una tarea ----
-let QCOUNT = 0;
-function surveyModal(taskId, title) {
-  QCOUNT = 0;
-  openModal(`
-    <h3>Encuesta: ${h(title)}</h3>
-    <label>Título de la encuesta</label><input id="s_title" value="${h(title)}">
-    <div id="qlist"></div>
-    <button class="btn ghost" style="margin-top:10px" onclick="addQ()">+ Agregar pregunta</button>
-    <div class="error" id="mErr"></div>
-    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
-      <button class="btn ghost" onclick="closeModal()">Cancelar</button>
-      <button class="btn primary" onclick="saveSurvey(${taskId})">Guardar encuesta</button>
-    </div>`);
-  addQ();
-}
-function addQ() {
-  QCOUNT++;
-  const d = document.createElement('div');
-  d.className = 'q-row'; d.id = 'q'+QCOUNT;
-  d.innerHTML = `
-    <div class="qhead">
-      <select id="q${QCOUNT}_type" style="width:150px">
-        <option value="single">Selección única</option><option value="multiple">Múltiple</option>
-        <option value="yesno">Sí/No</option><option value="scale">Escala</option><option value="text">Texto</option>
+function drawTasks(){
+  const tl = document.getElementById('tabList'), tr = document.getElementById('tabRev');
+  if (!tl || !tr) return;
+  tl.classList.toggle('active', taskTab==='list');
+  tr.classList.toggle('active', taskTab==='rev');
+  const body = document.getElementById('tabBody');
+  if (taskTab === 'rev') return void vReviews(body);
+  body.innerHTML = `
+    <div class="toolbar">
+      <div class="search">${ICONS.search}<input class="in" id="tq" placeholder="Buscar tareas…" oninput="drawTaskRows()"></div>
+      <select class="in" id="tcat" onchange="drawTaskRows()">
+        <option value="">Todas las categorías</option>
+        ${Object.entries(CATS).map(([k,l]) => `<option value="${k}">${l}</option>`).join('')}
       </select>
-      <button class="btn bad" onclick="document.getElementById('q${QCOUNT}').remove()">Quitar</button>
     </div>
-    <input type="text" id="q${QCOUNT}_text" placeholder="Texto de la pregunta">
-    <input type="text" id="q${QCOUNT}_opts" placeholder="Opciones separadas por coma (single/multiple)">
-    <div style="display:flex;gap:8px;margin-top:6px">
-      <input type="number" id="q${QCOUNT}_min" value="1" style="width:80px" title="Mín (escala)">
-      <input type="number" id="q${QCOUNT}_max" value="5" style="width:80px" title="Máx (escala)">
-    </div>`;
-  document.getElementById('qlist').appendChild(d);
+    <div class="table-wrap"><table>
+      <tr><th>Título</th><th>Categoría</th><th>Puntos</th><th>Estado</th><th style="text-align:right">Acciones</th></tr>
+      <tbody id="tBody"></tbody></table></div>`;
+  drawTaskRows();
 }
-async function saveSurvey(taskId) {
-  const questions = [];
-  document.querySelectorAll('.q-row').forEach((el, i) => {
-    const n = el.id.replace('q','');
-    const type = document.getElementById('q'+n+'_type').value;
-    const q = { id:'q'+(i+1), type, text:document.getElementById('q'+n+'_text').value, required:true };
-    if (type==='single'||type==='multiple')
-      q.options = document.getElementById('q'+n+'_opts').value.split(',').map(s=>s.trim()).filter(Boolean);
-    if (type==='scale') { q.min=parseInt(document.getElementById('q'+n+'_min').value)||1; q.max=parseInt(document.getElementById('q'+n+'_max').value)||5; }
-    questions.push(q);
+function drawTaskRows(){
+  const qEl = document.getElementById('tq');
+  if (!qEl) return;
+  const q = (qEl.value||'').toLowerCase();
+  const cat = document.getElementById('tcat').value;
+  const list = tasksCache.filter(t =>
+    (t.title+' '+(t.description||'')).toLowerCase().includes(q) && (!cat || t.category===cat));
+  document.getElementById('tBody').innerHTML = list.length ? list.map(t => `<tr>
+    <td><div class="cell-main">${h(t.title)}</div><div class="cell-sub">${h((t.description||'').slice(0,70))}</div></td>
+    <td><span class="pill info">${h(CATS[t.category]||t.category)}</span></td>
+    <td><b>${t.points}</b> <span class="cell-sub">pts</span></td>
+    <td>${t.active ? '<span class="pill ok">Activa</span>' : '<span class="pill bad">Pausada</span>'}</td>
+    <td><div class="row-actions">
+      <label class="switch" title="${t.active?'Pausar':'Activar'}"><input type="checkbox" ${t.active?'checked':''} onchange="toggleTask(${t.id},this.checked)"><span class="track"></span></label>
+      <button class="icon-btn" title="Editar" onclick="taskModal(${t.id})">${ICONS.edit}</button>
+      <button class="icon-btn" title="Encuesta" onclick="surveyModal(${t.id},'${h(t.title).replace(/'/g,'')}')">${ICONS.encuestas}</button>
+      <button class="icon-btn danger" title="Pausar" onclick="delTask(${t.id})">${ICONS.trash}</button>
+    </div></td></tr>`).join('')
+    : `<tr><td colspan="5"><div class="empty">Sin tareas.</div></td></tr>`;
+}
+async function toggleTask(id, active){
+  try { await req('PUT',`/api/admin/tasks/${id}`,{active}); toast(active?'Tarea activada.':'Tarea pausada.');
+    const t = tasksCache.find(t => t.id===id); if (t) t.active = active?1:0; drawTaskRows(); }
+  catch(e){ toast('Error: '+friendlyErr(e), true); drawTaskRows(); }
+}
+async function delTask(id){
+  if(!confirm('¿Pausar esta tarea? Dejará de mostrarse en la app sin borrar el historial.')) return;
+  try { await req('PUT',`/api/admin/tasks/${id}`,{active:false}); toast('Tarea pausada.');
+    const t = tasksCache.find(t => t.id===id); if (t) t.active = 0; drawTaskRows(); }
+  catch(e){ toast('Error: '+friendlyErr(e), true); }
+}
+function taskModal(id){
+  const t = id ? tasksCache.find(t => t.id===id) || {} : {};
+  openModal(`
+    <h3>${id?'Editar tarea':'Crear tarea'}</h3><div class="msub">Completa los datos de la recompensa</div>
+    <label class="f">Título</label><input class="in" id="f_title" value="${h(t.title||'')}">
+    <label class="f">Descripción</label><textarea class="in" id="f_desc" rows="2">${h(t.description||'')}</textarea>
+    <label class="f">Instrucciones para el usuario</label><textarea class="in" id="f_instr" rows="2">${h(t.instructions||'')}</textarea>
+    <div class="grid-f">
+      <div><label class="f">Categoría</label><select class="in" id="f_cat">${Object.entries(CATS).map(([k,l]) =>
+        `<option value="${k}" ${t.category===k?'selected':''}>${l}</option>`).join('')}</select></div>
+      <div><label class="f">Puntos</label><input class="in" id="f_pts" type="number" min="1" value="${t.points||10}"></div>
+      <div><label class="f">Minutos estimados</label><input class="in" id="f_min" type="number" min="1" value="${t.estimated_minutes||5}"></div>
+      <div><label class="f">Máx. por usuario</label><input class="in" id="f_max" type="number" min="1" value="${t.max_completions_per_user||1}"></div>
+    </div>
+    <label class="f">Verificación</label><select class="in" id="f_ver">
+      ${['manual','auto','survey'].map(vv => `<option value="${vv}" ${t.verification===vv?'selected':''}>${{manual:'Manual (revisión)',auto:'Automática',survey:'Encuesta'}[vv]}</option>`).join('')}
+    </select>
+    <label class="f">Requisitos</label><input class="in" id="f_req" value="${h(t.requirements||'')}">
+    <label class="f">URL destino</label><input class="in" id="f_url" value="${h(t.target_url||'')}">
+    <div class="error" id="mErr"></div>
+    <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveTask(${id||'null'})">Guardar</button></div>`);
+}
+async function saveTask(id){
+  const err = document.getElementById('mErr'); err.textContent='';
+  const body = {
+    title:f_title.value.trim(), description:f_desc.value.trim(), instructions:f_instr.value.trim(),
+    category:f_cat.value, points:parseInt(f_pts.value)||0, estimated_minutes:parseInt(f_min.value)||5,
+    max_completions_per_user:parseInt(f_max.value)||1, verification:f_ver.value,
+    requirements:f_req.value.trim(), target_url:f_url.value.trim(),
+  };
+  if(!body.title || body.points < 1){ err.textContent='Título y puntos (mínimo 1) son obligatorios.'; return; }
+  try {
+    if (id) await req('PUT',`/api/admin/tasks/${id}`,body);
+    else await req('POST','/api/admin/tasks',body);
+    closeModal(); toast(id?'Tarea actualizada.':'Tarea creada.'); taskTab='list'; vTareas();
+  } catch(e){ err.textContent = friendlyErr(e); }
+}
+
+/* ---- Revisiones pendientes ---- */
+async function vReviews(body){
+  body.innerHTML = '<div class="loading">Cargando…</div>';
+  try {
+    const {completions} = await req('GET','/api/admin/completions?status=pending');
+    const el = document.getElementById('revCount'); if (el) el.textContent = completions.length;
+    body.innerHTML = completions.length ? completions.map(c => {
+      const dt = new Date(String(c.created_at).replace(' ','T'));
+      return `
+      <div class="review-card">
+        <span class="avatar-sm" style="background:${avatarColor(c.user_name)}">${h(initial(c.user_name))}</span>
+        <div class="grow">
+          <div class="cell-main">${h(c.task_title)} <span class="pill info">${c.task_points} pts</span></div>
+          <div class="cell-sub">${h(c.user_name)} · ${h(c.user_email)} · enviada ${isNaN(dt)?h(c.created_at):dt.toLocaleString('es')}</div>
+          ${c.evidence ? `<div class="evid"><b>Evidencia:</b> ${h(c.evidence)}</div>` : ''}
+        </div>
+        <div class="row-actions">
+          <button class="btn ok sm" onclick="review(${c.id},'approve')">Aprobar</button>
+          <button class="btn bad sm" onclick="review(${c.id},'reject')">Rechazar</button>
+        </div>
+      </div>`; }).join('')
+      : `<div class="empty">${ICONS.tareas}<br>No hay envíos pendientes de revisión.</div>`;
+  } catch(e){ body.innerHTML = `<p class="error">Error: ${h(friendlyErr(e))}</p>`; }
+}
+async function review(id, action){
+  if(action==='reject' && !confirm('¿Rechazar este envío? El usuario no recibirá los puntos.')) return;
+  try { await req('POST',`/api/admin/completions/${id}/${action}`,{});
+    toast(action==='approve'?'Envío aprobado, puntos acreditados.':'Envío rechazado.');
+    taskTab='rev'; vTareas(); }
+  catch(e){ toast('Error: '+friendlyErr(e), true); }
+}
+
+/* ============ ENCUESTAS ============ */
+async function vEncuestas(){
+  const v = document.getElementById('view');
+  v.innerHTML = `<div class="page-head"><div><h1>Encuestas</h1><p>Preguntas por tarea: única, múltiple, sí/no, escala y texto</p></div></div><div class="loading">Cargando…</div>`;
+  try {
+    const {tasks} = await req('GET','/api/admin/tasks');
+    window._surveyTasks = tasks;
+    v.innerHTML = `
+      <div class="page-head"><div><h1>Encuestas</h1><p>${tasks.length} tareas · configura sus preguntas</p></div></div>
+      <div class="toolbar"><div class="search">${ICONS.search}<input class="in" id="sq" placeholder="Buscar tareas…" oninput="drawSurveyRows()"></div></div>
+      <div class="table-wrap"><table>
+        <tr><th>Tarea</th><th>Categoría</th><th>Puntos</th><th>Estado</th><th style="text-align:right">Acciones</th></tr>
+        <tbody id="sBody"></tbody></table></div>`;
+    drawSurveyRows();
+  } catch(e){ v.innerHTML = `<p class="error">Error: ${h(friendlyErr(e))}</p>`; }
+}
+function drawSurveyRows(){
+  const q = (document.getElementById('sq').value||'').toLowerCase();
+  const list = (window._surveyTasks||[]).filter(t => t.title.toLowerCase().includes(q));
+  document.getElementById('sBody').innerHTML = list.length ? list.map(t => `<tr>
+    <td><div class="cell-main">${h(t.title)}</div><div class="cell-sub">${t.verification==='survey'?'Con encuesta configurada':'Sin encuesta'}</div></td>
+    <td><span class="pill info">${h(CATS[t.category]||t.category)}</span></td>
+    <td><b>${t.points}</b></td>
+    <td>${t.active?'<span class="pill ok">Activa</span>':'<span class="pill bad">Pausada</span>'}</td>
+    <td><div class="row-actions"><button class="btn primary sm" onclick="surveyModal(${t.id},'${h(t.title).replace(/'/g,'')}')">Editar encuesta</button></div></td>
+  </tr>`).join('') : `<tr><td colspan="5"><div class="empty">Sin tareas.</div></td></tr>`;
+}
+let surveyQs = [];
+function surveyModal(taskId, title){
+  surveyQs = [{type:'single', text:'', options:['',''], required:true, min:1, max:5}];
+  openModal(`
+    <h3>Encuesta</h3><div class="msub">${h(title||'')}</div>
+    <label class="f">Título de la encuesta</label><input class="in" id="sv_title" value="Encuesta">
+    <div id="qList"></div>
+    <button class="btn ghost sm" style="margin-top:12px" onclick="addQ()">${ICONS.plus} Agregar pregunta</button>
+    <div class="error" id="mErr"></div>
+    <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveSurvey(${taskId})">Guardar encuesta</button></div>`);
+  drawQs();
+}
+function addQ(){ surveyQs.push({type:'single', text:'', options:['',''], required:false, min:1, max:5}); drawQs(); }
+function delQ(i){ surveyQs.splice(i,1); drawQs(); }
+function drawQs(){
+  const types = {single:'Selección única',multiple:'Selección múltiple',yesno:'Sí / No',scale:'Escala',text:'Texto libre'};
+  document.getElementById('qList').innerHTML = surveyQs.map((q,i) => `
+    <div class="q-row"><div class="qhead"><span class="n">P${i+1}</span>
+      <select class="in" onchange="surveyQs[${i}].type=this.value;drawQs()">${Object.entries(types).map(([k,l]) =>
+        `<option value="${k}" ${q.type===k?'selected':''}>${l}</option>`).join('')}</select>
+      <button class="icon-btn danger" onclick="delQ(${i})" title="Quitar pregunta">${ICONS.trash}</button></div>
+      <input class="in" style="margin-top:8px" placeholder="Texto de la pregunta" value="${h(q.text)}" oninput="surveyQs[${i}].text=this.value">
+      ${(q.type==='single'||q.type==='multiple') ? `
+        <div style="margin-top:8px">${q.options.map((op,oi) => `
+          <div style="display:flex;gap:6px;margin-bottom:6px"><input class="in" placeholder="Opción ${oi+1}" value="${h(op)}"
+            oninput="surveyQs[${i}].options[${oi}]=this.value">
+            <button class="icon-btn danger" onclick="surveyQs[${i}].options.splice(${oi},1);drawQs()" title="Quitar opción">${ICONS.x}</button></div>`).join('')}
+        <button class="btn ghost sm" onclick="surveyQs[${i}].options.push('');drawQs()">+ Opción</button></div>` : ''}
+      ${q.type==='scale' ? `<div class="grid-f"><div><label class="f">Mínimo</label><input class="in" type="number" value="${q.min||1}" oninput="surveyQs[${i}].min=+this.value"></div>
+        <div><label class="f">Máximo</label><input class="in" type="number" value="${q.max||5}" oninput="surveyQs[${i}].max=+this.value"></div></div>` : ''}
+      <label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:12.5px;color:var(--muted)">
+        <input type="checkbox" ${q.required?'checked':''} onchange="surveyQs[${i}].required=this.checked"> Respuesta obligatoria</label>
+    </div>`).join('');
+}
+async function saveSurvey(taskId){
+  const err = document.getElementById('mErr'); err.textContent='';
+  const questions = surveyQs.map((q,i) => {
+    const base = {id:'q'+(i+1), type:q.type, text:q.text.trim(), required:!!q.required};
+    if(q.type==='single'||q.type==='multiple'){
+      const options = q.options.map(o=>o.trim()).filter(Boolean);
+      if(options.length < 2){ err.textContent = `La pregunta ${i+1} necesita al menos 2 opciones.`; return null; }
+      return {...base, options};
+    }
+    if(q.type==='scale') return {...base, min:q.min||1, max:q.max||5};
+    return base;
   });
+  if (questions.some(q => !q)) return;
+  if (questions.some(q => !q.text)){ err.textContent='Todas las preguntas necesitan texto.'; return; }
   try {
-    await req('POST', `/api/admin/tasks/${taskId}/survey`, { title: s_title.value, questions });
-    closeModal(); alert('Encuesta guardada.');
-  } catch(e) { mErr.textContent = e.message; }
+    await req('POST',`/api/admin/tasks/${taskId}/survey`,{title:sv_title.value.trim()||'Encuesta', questions});
+    await req('PUT',`/api/admin/tasks/${taskId}`,{verification:'survey'});
+    closeModal(); toast('Encuesta guardada.'); vEncuestas();
+  } catch(e){ err.textContent = friendlyErr(e); }
 }
 
-// ---- Verificaciones ----
-async function vVerif() {
-  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
+/* ============ PAGOS ============ */
+let payCache = [];
+async function vPagos(){
+  const v = document.getElementById('view');
+  v.innerHTML = `<div class="page-head"><div><h1>Pagos y recompensas</h1><p>Canjes de puntos por dinero</p></div></div><div class="loading">Cargando…</div>`;
   try {
-    const {completions} = await req('GET', '/api/admin/completions?status=pending');
-    v.innerHTML = `
-      <div class="toolbar"><h2>Verificaciones pendientes (${completions.length})</h2>
-        <button class="btn ghost" onclick="vVerifHist()">Ver historial</button></div>
-      ${completions.length ? `<table><tr><th>ID</th><th>Tarea</th><th>Usuario</th><th>Puntos</th><th>Enviada</th><th></th></tr>
-      ${completions.map(c => `<tr>
-        <td>#${c.id}</td><td><b>${h(c.task_title)}</b></td>
-        <td>${h(c.user_name)}<br><span style="color:var(--muted);font-size:12px">${h(c.user_email)}</span></td>
-        <td>${c.task_points}</td><td>${h((c.submitted_at||'').slice(0,16).replace('T',' '))}</td>
-        <td><div class="row-actions">
-          <button class="btn ok" onclick="decide(${c.id},'approve')">Aprobar</button>
-          <button class="btn bad" onclick="decide(${c.id},'reject')">Rechazar</button>
-        </div></td></tr>`).join('')}</table>`
-      : '<div class="card">No hay verificaciones pendientes. 🎉</div>'}`;
-  } catch(e) { v.innerHTML = `<p class="error">Error: ${h(e.message)}</p>`; }
-}
-async function vVerifHist() {
-  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
-  const {completions} = await req('GET', '/api/admin/completions');
-  const done = completions.filter(c => c.status !== 'pending');
-  v.innerHTML = `<div class="toolbar"><h2>Historial de verificaciones</h2>
-      <button class="btn ghost" onclick="vVerif()">Volver a pendientes</button></div>
-    <table><tr><th>ID</th><th>Tarea</th><th>Usuario</th><th>Estado</th><th>Fecha</th></tr>
-    ${done.map(c => `<tr><td>#${c.id}</td><td>${h(c.task_title)}</td><td>${h(c.user_name)}</td>
-      <td>${pill(c.status)}</td><td>${h((c.reviewed_at||'').slice(0,16).replace('T',' '))}</td></tr>`).join('')}</table>`;
-}
-async function decide(id, action) {
-  try { await req('POST', `/api/admin/completions/${id}/${action}`, {}); vVerif(); }
-  catch(e){ alert(e.message); }
-}
-
-// ---- Usuarios ----
-async function vUsuarios() {
-  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
-  try {
-    const {users} = await req('GET', '/api/admin/users');
-    v.innerHTML = `
-      <div class="toolbar"><h2>Usuarios (${users.length})</h2></div>
-      <table><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Puntos</th><th>Nivel</th><th></th></tr>
-      ${users.map(u => `<tr>
-        <td><b>${h(u.name)}</b><br><span style="color:var(--muted);font-size:12px">${h(u.email)}</span></td>
-        <td>${h(u.role)}</td><td>${pill(u.status)}</td><td>${u.points}</td><td>${u.level}</td>
-        <td><div class="row-actions">
-          <button class="btn ghost" onclick="userRole(${u.id},'${u.role==='admin'?'user':'admin'}')">
-            ${u.role==='admin'?'Quitar admin':'Hacer admin'}</button>
-          <button class="btn ${u.status==='active'?'bad':'ok'}" onclick="userStatus(${u.id},'${u.status==='active'?'inactive':'active'}')">
-            ${u.status==='active'?'Desactivar':'Activar'}</button>
-        </div></td></tr>`).join('')}</table>`;
-  } catch(e) { v.innerHTML = `<p class="error">Error: ${h(e.message)}</p>`; }
-}
-async function userRole(id, role) {
-  if (!confirm('¿Cambiar rol a "'+role+'"?')) return;
-  try { await req('PATCH','/api/admin/users/'+id,{role}); vUsuarios(); } catch(e){ alert(e.message); }
-}
-async function userStatus(id, status) {
-  try { await req('PATCH','/api/admin/users/'+id,{status}); vUsuarios(); } catch(e){ alert(e.message); }
-}
-
-// ---- Canjes ----
-async function vCanjes() {
-  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
-  try {
-    const {redemptions} = await req('GET', '/api/admin/redemptions');
+    const [{redemptions}, cfg] = await Promise.all([req('GET','/api/admin/redemptions'), req('GET','/api/config')]);
+    payCache = redemptions;
     const pend = redemptions.filter(r => r.status==='pending');
+    const pendUsd = pend.reduce((a,r) => a+Number(r.amount_usd), 0);
+    const doneCount = redemptions.filter(r => r.status==='completed').length;
     v.innerHTML = `
-      <div class="toolbar"><h2>Canjes (${pend.length} pendientes)</h2></div>
-      <table><tr><th>ID</th><th>Usuario</th><th>Puntos</th><th>USD</th><th>Estado</th><th>Solicitado</th><th></th></tr>
-      ${redemptions.map(r => `<tr>
-        <td>#${r.id}</td><td>${h(r.user_name)}<br><span style="color:var(--muted);font-size:12px">${h(r.user_email)}</span></td>
-        <td>${r.points}</td><td>$${r.amount_usd.toFixed(2)}</td><td>${pill(r.status)}</td>
-        <td>${h((r.created_at||'').slice(0,16).replace('T',' '))}</td>
-        <td>${r.status==='pending' ? `<div class="row-actions">
-            <button class="btn ok" onclick="redeemDecide(${r.id},'complete')">Marcar pagado</button>
-            <button class="btn bad" onclick="redeemDecide(${r.id},'reject')">Rechazar</button>
-          </div>` : ''}</td></tr>`).join('')}</table>
-      <p class="note">Rechazar un canje devuelve los puntos al usuario (movimiento REVERSAL en el ledger).</p>`;
-  } catch(e) { v.innerHTML = `<p class="error">Error: ${h(e.message)}</p>`; }
+      <div class="page-head"><div><h1>Pagos y recompensas</h1><p>${redemptions.length} canjes · conversión: <span class="kbd">${cfg.points_per_usd} pts = $1</span></p></div></div>
+      <div class="stats">
+        <div class="stat"><div class="ic amber">${ICONS.pagos}</div><div><div class="v">${fmtUsd(pendUsd)}</div><div class="l">Pendiente de pago</div><span class="d flat">${pend.length} canjes</span></div></div>
+        <div class="stat"><div class="ic green">${ICONS.pagos}</div><div><div class="v">${doneCount}</div><div class="l">Pagos completados</div></div></div>
+      </div>
+      <div class="toolbar"><div class="search">${ICONS.search}<input class="in" id="pq" placeholder="Buscar usuario…" oninput="drawPays()"></div>
+        <select class="in" id="pstat" onchange="drawPays()"><option value="">Todos los estados</option><option value="pending">Pendientes</option><option value="completed">Completados</option><option value="rejected">Rechazados</option></select></div>
+      <div class="table-wrap"><table>
+        <tr><th>Usuario</th><th>Monto</th><th>Puntos</th><th>Fecha</th><th>Estado</th><th style="text-align:right">Acciones</th></tr>
+        <tbody id="pBody"></tbody></table></div>`;
+    drawPays();
+  } catch(e){ v.innerHTML = `<p class="error">Error: ${h(friendlyErr(e))}</p>`; }
 }
-async function redeemDecide(id, action) {
-  try { await req('POST', `/api/admin/redemptions/${id}/${action}`, {}); vCanjes(); }
-  catch(e){ alert(e.message); }
+function drawPays(){
+  const q = (document.getElementById('pq').value||'').toLowerCase();
+  const st = document.getElementById('pstat').value;
+  const list = payCache.filter(r =>
+    (r.user_name+' '+r.user_email).toLowerCase().includes(q) && (!st || r.status===st));
+  const pillFor = (s) => ({pending:'<span class="pill warn">Pendiente</span>',completed:'<span class="pill ok">Completado</span>',rejected:'<span class="pill bad">Rechazado</span>'}[s]||h(s));
+  document.getElementById('pBody').innerHTML = list.length ? list.map(r => {
+    const dt = new Date(String(r.created_at).replace(' ','T'));
+    return `<tr>
+    <td><div class="user-cell"><span class="avatar-sm" style="background:${avatarColor(r.user_name)}">${h(initial(r.user_name))}</span>
+      <div><div class="cell-main">${h(r.user_name)}</div><div class="cell-sub">${h(r.user_email)}</div></div></div></td>
+    <td><b>${fmtUsd(r.amount_usd)}</b></td><td>${fmtInt(r.points)} pts</td>
+    <td class="cell-sub">${isNaN(dt)?h(r.created_at):dt.toLocaleDateString('es')}</td>
+    <td>${pillFor(r.status)}</td>
+    <td>${r.status==='pending' ? `<div class="row-actions">
+        <button class="btn ok sm" onclick="payAction(${r.id},'complete')">Marcar pagado</button>
+        <button class="btn bad sm" onclick="payAction(${r.id},'reject')">Rechazar</button></div>` : '<span class="cell-sub">—</span>'}</td>
+  </tr>`; }).join('') : `<tr><td colspan="6"><div class="empty">Sin canjes.</div></td></tr>`;
+}
+async function payAction(id, action){
+  const msg = action==='complete' ? '¿Confirmar que este pago fue enviado?' : '¿Rechazar el canje? Los puntos se devolverán al usuario.';
+  if(!confirm(msg)) return;
+  try { await req('POST',`/api/admin/redemptions/${id}/${action}`,{});
+    toast(action==='complete'?'Pago marcado como completado.':'Canje rechazado, puntos devueltos.'); vPagos(); }
+  catch(e){ toast('Error: '+friendlyErr(e), true); }
 }
 
-// ---- Configuración ----
-async function vConfig() {
-  const v = document.getElementById('view'); v.innerHTML = '<p>Cargando…</p>';
+/* ============ REPORTES ============ */
+async function vReportes(){
+  const v = document.getElementById('view');
+  v.innerHTML = `<div class="page-head"><div><h1>Reportes</h1><p>Métricas clave de la plataforma</p></div></div><div class="loading">Cargando…</div>`;
   try {
-    const c = await req('GET', '/api/config');
+    const [s, uq, rq, act] = await Promise.all([
+      req('GET','/api/admin/stats'), req('GET','/api/admin/users'),
+      req('GET','/api/admin/redemptions'), req('GET','/api/admin/activity'),
+    ]);
+    const users = uq.users, redemptions = rq.redemptions;
+    const top = [...users].sort((a,b) => b.points-a.points).slice(0,5);
+    const withPts = users.filter(u => u.points>0).length;
+    const conv = s.users ? (withPts/s.users*100) : 0;
     v.innerHTML = `
-      <div class="toolbar"><h2>Configuración</h2></div>
-      <div class="card" style="max-width:520px">
-        <label>Puntos por cada USD (conversión global)</label>
-        <input id="cfg_ppu" type="number" min="1" value="${c.points_per_usd}">
-        <p class="note">Ejemplo: 50 significa que 50 puntos = $1.00 USD.
-          La app y los canjes usan siempre este valor; nunca está hardcodeado.</p>
+      <div class="page-head"><div><h1>Reportes</h1><p>Métricas clave de la plataforma</p></div>
+        <button class="btn ghost" onclick="window.print()">Imprimir</button></div>
+      <div class="stats">
+        <div class="stat"><div class="ic blue">${ICONS.usuarios}</div><div><div class="v">${fmtInt(s.users)}</div><div class="l">Usuarios totales</div></div></div>
+        <div class="stat"><div class="ic green">${ICONS.tareas}</div><div><div class="v">${fmtInt(s.points_issued)}</div><div class="l">Puntos emitidos</div></div></div>
+        <div class="stat"><div class="ic amber">${ICONS.pagos}</div><div><div class="v">${fmtUsd(s.paid_out_usd)}</div><div class="l">Pagado a usuarios</div></div></div>
+        <div class="stat"><div class="ic purple">${ICONS.reportes}</div><div><div class="v">${conv.toFixed(1)}%</div><div class="l">Usuarios con puntos</div></div></div>
+      </div>
+      <div class="grid-2">
+        <div class="panel"><h3>Crecimiento de usuarios</h3><div class="sub">Últimos 30 días</div>${areaChart(act.days,'users','#7C3AED')}</div>
+        <div class="panel"><h3>Top usuarios por puntos</h3><div class="sub">Saldo actual</div>
+          ${top.length ? `<div class="table-wrap" style="box-shadow:none"><table style="min-width:0"><tr><th>#</th><th>Usuario</th><th style="text-align:right">Puntos</th></tr>
+            ${top.map((u,i) => `<tr><td><b>${i+1}</b></td>
+              <td><div class="user-cell"><span class="avatar-sm" style="background:${avatarColor(u.name)}">${h(initial(u.name))}</span>
+              <div><div class="cell-main">${h(u.name)}</div><div class="cell-sub">Nivel ${u.level}</div></div></div></td>
+              <td style="text-align:right"><b>${fmtInt(u.points)}</b></td></tr>`).join('')}</table></div>`
+          : '<div class="empty">Sin datos.</div>'}</div>
+      </div>
+      <div class="panel"><h3>Canjes por estado</h3><div class="sub">Distribución de solicitudes de pago</div>
+        ${bars([
+          {l:'Completados', v:redemptions.filter(r=>r.status==='completed').length},
+          {l:'Pendientes', v:redemptions.filter(r=>r.status==='pending').length},
+          {l:'Rechazados', v:redemptions.filter(r=>r.status==='rejected').length},
+        ],'#2563EB')}</div>`;
+  } catch(e){ v.innerHTML = `<p class="error">Error: ${h(friendlyErr(e))}</p>`; }
+}
+
+/* ============ CONFIGURACIÓN ============ */
+async function vConfig(){
+  const v = document.getElementById('view');
+  v.innerHTML = `<div class="page-head"><div><h1>Configuración</h1><p>Parámetros globales de la plataforma</p></div></div><div class="loading">Cargando…</div>`;
+  try {
+    const cfg = await req('GET','/api/config');
+    v.innerHTML = `
+      <div class="page-head"><div><h1>Configuración</h1><p>Parámetros globales de la plataforma</p></div></div>
+      <div class="panel" style="max-width:560px">
+        <h3>Conversión puntos → USD</h3>
+        <div class="sub">La app y los canjes usan este valor. Nunca está hardcodeado.</div>
+        <label class="f">Puntos por cada $1 USD</label>
+        <input class="in" id="cfgPpu" type="number" min="1" value="${cfg.points_per_usd}">
+        <p class="note">Ejemplo: con <span class="kbd">50</span>, un canje de 500 puntos equivale a <span class="kbd">$10.00</span>.</p>
         <div class="error" id="cfgErr"></div>
-        <button class="btn primary" style="margin-top:12px" onclick="saveCfg()">Guardar</button>
+        <div style="margin-top:16px"><button class="btn primary" onclick="saveConfig()">Guardar cambios</button></div>
       </div>`;
-  } catch(e) { v.innerHTML = `<p class="error">Error: ${h(e.message)}</p>`; }
+  } catch(e){ v.innerHTML = `<p class="error">Error: ${h(friendlyErr(e))}</p>`; }
 }
-async function saveCfg() {
-  try {
-    const ppu = parseInt(document.getElementById('cfg_ppu').value);
-    await req('PUT', '/api/admin/config', { points_per_usd: ppu });
-    alert('Conversión actualizada: ' + ppu + ' puntos = $1.00 USD');
-  } catch(e) { document.getElementById('cfgErr').textContent = e.message; }
+async function saveConfig(){
+  const err = document.getElementById('cfgErr'); err.textContent='';
+  const val = parseInt(document.getElementById('cfgPpu').value, 10);
+  if(!Number.isInteger(val) || val <= 0){ err.textContent='Ingresa un número entero mayor que 0.'; return; }
+  try { await req('PUT','/api/admin/config',{points_per_usd:val}); toast('Configuración guardada.'); }
+  catch(e){ err.textContent = friendlyErr(e); }
 }
 
-// ---- Modal helpers ----
-function openModal(html) { document.getElementById('modalBox').innerHTML = html;
-  document.getElementById('modal').classList.add('open'); }
-function closeModal() { document.getElementById('modal').classList.remove('open'); }
-document.getElementById('modal').addEventListener('click', e => { if (e.target.id==='modal') closeModal(); });
+/* ============ Modal ============ */
+function openModal(html){ document.getElementById('modalBox').innerHTML = html; document.getElementById('modal').classList.add('open'); }
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+document.getElementById('modal').addEventListener('click', e => { if(e.target.id==='modal') closeModal(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
 
-// Auto-login si hay token guardado
-(async () => {
-  if (!TOKEN) return;
-  try {
-    const me = await req('GET', '/api/auth/me');
-    if (me.user.role !== 'admin') throw new Error('no admin');
-    document.getElementById('adminName').textContent = me.user.name;
-    enter();
-  } catch(e) { logout(); }
-})();
+/* ============ Init ============ */
+if (TOKEN) { req('GET','/api/auth/me').then(j => { ADMIN_NAME = j.user.name; enter(); }).catch(() => logout()); }
+document.getElementById('pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('email').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 </script>
 </body>
 </html>

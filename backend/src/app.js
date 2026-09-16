@@ -348,10 +348,30 @@ function createApp(db) {
   app.get('/api/admin/stats', requireAuth, requireAdmin, (req, res) => {
     const users = db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
     const activeTasks = db.prepare('SELECT COUNT(*) AS c FROM tasks WHERE active = 1').get().c;
+    const surveys = db.prepare('SELECT COUNT(*) AS c FROM surveys s JOIN tasks t ON t.id = s.task_id WHERE t.active = 1').get().c;
     const pendingCompletions = db.prepare("SELECT COUNT(*) AS c FROM task_completions WHERE status = 'pending'").get().c;
     const pointsIssued = db.prepare("SELECT COALESCE(SUM(points),0) AS s FROM ledger WHERE type IN ('EARN','BONUS')").get().s;
     const pendingPayouts = db.prepare("SELECT COALESCE(SUM(amount_usd),0) AS s FROM redemptions WHERE status = 'pending'").get().s;
-    res.json({ users, active_tasks: activeTasks, pending_completions: pendingCompletions, points_issued: pointsIssued, pending_payouts_usd: pendingPayouts });
+    const paidOut = db.prepare("SELECT COALESCE(SUM(amount_usd),0) AS s FROM redemptions WHERE status = 'completed'").get().s;
+    res.json({ users, active_tasks: activeTasks, surveys, pending_completions: pendingCompletions, points_issued: pointsIssued, pending_payouts_usd: pendingPayouts, paid_out_usd: paidOut });
+  });
+
+  app.get('/api/admin/activity', requireAuth, requireAdmin, (req, res) => {
+    // Últimos 30 días: usuarios nuevos y tareas completadas por día.
+    const days = [];
+    for (let i = 29; i >= 0; i--) days.push(new Date(Date.now() - i * 864e5).toISOString().slice(0, 10));
+    const users = db.prepare(`SELECT substr(created_at,1,10) AS d, COUNT(*) AS c FROM users
+      WHERE created_at >= date('now','-30 days') GROUP BY d`).all();
+    const done = db.prepare(`SELECT substr(submitted_at,1,10) AS d, COUNT(*) AS c FROM task_completions
+      WHERE submitted_at >= date('now','-30 days') AND status IN ('approved','pending') GROUP BY d`).all();
+    const um = Object.fromEntries(users.map((r) => [r.d, r.c]));
+    const dm = Object.fromEntries(done.map((r) => [r.d, r.c]));
+    res.json({ days: days.map((d) => ({ date: d, users: um[d] || 0, completions: dm[d] || 0 })) });
+  });
+
+  app.get('/api/admin/tasks', requireAuth, requireAdmin, (req, res) => {
+    const tasks = db.prepare('SELECT * FROM tasks ORDER BY id DESC').all();
+    res.json({ tasks });
   });
 
   app.get('/api/admin/users', requireAuth, requireAdmin, (req, res) => {
