@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../core/session.dart';
 import '../core/models.dart';
+import '../core/api.dart';
 import '../widgets/common.dart';
 import 'redeem.dart' show PaymentHistoryScreen;
 import 'achievements.dart';
@@ -59,7 +60,12 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           _MenuItem(
-              icon: Icons.edit_outlined, label: 'Editar perfil', onTap: () {}),
+              icon: Icons.edit_outlined,
+              label: 'Editar perfil',
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => EditProfileScreen(session: session)))),
           _MenuItem(
               icon: Icons.credit_card_outlined,
               label: 'Métodos de pago',
@@ -145,6 +151,360 @@ class _MenuItem extends StatelessWidget {
                 color: danger ? SipiColors.danger : SipiColors.text)),
         trailing: const Icon(Icons.chevron_right, color: SipiColors.muted),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+// ---------------- Editar perfil ----------------
+class EditProfileScreen extends StatefulWidget {
+  final Session session;
+  const EditProfileScreen({super.key, required this.session});
+  @override
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  late final TextEditingController _name;
+  late final TextEditingController _email;
+  bool _loading = false;
+  bool _dirty = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.session.user?.name ?? '');
+    _email = TextEditingController(text: widget.session.user?.email ?? '');
+    _name.addListener(_onChanged);
+    _email.addListener(_onChanged);
+  }
+
+  void _onChanged() {
+    final dirty = _name.text.trim() != (widget.session.user?.name ?? '') ||
+        _email.text.trim() != (widget.session.user?.email ?? '');
+    if (dirty != _dirty) setState(() => _dirty = dirty);
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _name.text.trim();
+    final email = _email.text.trim();
+    if (name.isEmpty || email.isEmpty) {
+      showError(context, ApiException(400, 'MISSING_FIELDS'));
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      await widget.session.updateProfile(name: name, email: email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perfil actualizado.')),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final u = widget.session.user;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Editar perfil')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const SizedBox(height: 8),
+            Stack(
+              children: [
+                Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF2F63F0), SipiColors.primaryDark],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: SipiColors.primary.withValues(alpha: 0.3),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                      (u?.name ?? '?').substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                          fontSize: 38,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white)),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: SipiColors.border, width: 2),
+                    ),
+                    child: const Icon(Icons.camera_alt_outlined,
+                        size: 16, color: SipiColors.primary),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Nombre',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: SipiColors.text)),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _name,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                hintText: 'Tu nombre',
+                prefixIcon: Icon(Icons.person_outline),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Correo electrónico',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: SipiColors.text)),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                hintText: 'tu@correo.com',
+                prefixIcon: Icon(Icons.mail_outline),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              elevation: 0,
+              margin: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(SipiRadii.md)),
+              child: ListTile(
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: SipiColors.primarySoft,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.lock_outline,
+                      color: SipiColors.primary, size: 20),
+                ),
+                title: const Text('Cambiar contraseña',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                subtitle: const Text('Actualiza tu contraseña',
+                    style: TextStyle(color: SipiColors.muted, fontSize: 12)),
+                trailing:
+                    const Icon(Icons.chevron_right, color: SipiColors.muted),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            ChangePasswordScreen(session: widget.session))),
+              ),
+            ),
+            const SizedBox(height: 28),
+            SipiButton(
+              label: 'Guardar cambios',
+              loading: _loading,
+              onPressed: _dirty ? _save : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------- Cambiar contraseña ----------------
+class ChangePasswordScreen extends StatefulWidget {
+  final Session session;
+  const ChangePasswordScreen({super.key, required this.session});
+  @override
+  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+}
+
+class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+  final _current = TextEditingController();
+  final _nueva = TextEditingController();
+  final _confirm = TextEditingController();
+  bool _loading = false;
+  bool _obscureCurrent = true;
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
+
+  @override
+  void dispose() {
+    _current.dispose();
+    _nueva.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_nueva.text != _confirm.text) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Las contraseñas nuevas no coinciden.')));
+      }
+      return;
+    }
+    if (_nueva.text.length < 6) {
+      showError(context, ApiException(400, 'WEAK_PASSWORD'));
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      await widget.session.api.changePassword(
+        currentPassword: _current.text,
+        newPassword: _nueva.text,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Contraseña actualizada.')),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Cambiar contraseña')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: SipiColors.primarySoft,
+                borderRadius: BorderRadius.circular(SipiRadii.lg),
+              ),
+              child: const Row(children: [
+                Icon(Icons.info_outline, color: SipiColors.primary, size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Usa al menos 6 caracteres. No compartas tu contraseña con nadie.',
+                    style: TextStyle(
+                        color: SipiColors.text, fontSize: 13, height: 1.4),
+                  ),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 20),
+            const Text('Contraseña actual',
+                style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: SipiColors.text)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _current,
+              obscureText: _obscureCurrent,
+              decoration: InputDecoration(
+                hintText: '••••••••',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(_obscureCurrent
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined),
+                  onPressed: () =>
+                      setState(() => _obscureCurrent = !_obscureCurrent),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Nueva contraseña',
+                style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: SipiColors.text)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _nueva,
+              obscureText: _obscureNew,
+              decoration: InputDecoration(
+                hintText: 'Mínimo 6 caracteres',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(_obscureNew
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined),
+                  onPressed: () =>
+                      setState(() => _obscureNew = !_obscureNew),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Confirmar nueva contraseña',
+                style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: SipiColors.text)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _confirm,
+              obscureText: _obscureConfirm,
+              decoration: InputDecoration(
+                hintText: 'Repite la nueva contraseña',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(_obscureConfirm
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined),
+                  onPressed: () =>
+                      setState(() => _obscureConfirm = !_obscureConfirm),
+                ),
+              ),
+            ),
+            const SizedBox(height: 28),
+            SipiButton(
+              label: 'Actualizar contraseña',
+              loading: _loading,
+              onPressed: _save,
+            ),
+          ],
+        ),
       ),
     );
   }

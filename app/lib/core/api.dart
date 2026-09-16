@@ -29,6 +29,8 @@ class ApiException implements Exception {
         return 'Ya respondiste esta encuesta.';
       case 'AMOUNT_TOO_LOW':
         return 'El monto es demasiado bajo.';
+      case 'INVALID_EMAIL':
+        return 'Ese correo electrónico no es válido.';
       default:
         return 'Ocurrió un error. Inténtalo de nuevo.';
     }
@@ -89,6 +91,20 @@ class SipiApi {
   Future<User> me() async {
     final j = await _req('GET', '/api/auth/me');
     return User.fromJson(j['user']);
+  }
+
+  Future<User> updateProfile({required String name, required String email}) async {
+    final j = await _req(
+        'PUT', '/api/users/me', {'name': name, 'email': email});
+    return User.fromJson(j['user']);
+  }
+
+  Future<void> changePassword(
+      {required String currentPassword, required String newPassword}) async {
+    await _req('PUT', '/api/users/me/password', {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    });
   }
 
   // ---- Saldo ----

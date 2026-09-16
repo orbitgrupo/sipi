@@ -50,6 +50,52 @@ describe('auth', () => {
   });
 });
 
+describe('perfil', () => {
+  test('actualiza nombre y correo', async () => {
+    const r = await request(app).put('/api/users/me')
+      .set(auth(userToken))
+      .send({ name: 'Alex Nuevo', email: 'alexnuevo@mail.com' });
+    expect(r.status).toBe(200);
+    expect(r.body.user.name).toBe('Alex Nuevo');
+    expect(r.body.user.email).toBe('alexnuevo@mail.com');
+  });
+  test('email duplicado falla con 409', async () => {
+    const r = await request(app).put('/api/users/me')
+      .set(auth(userToken))
+      .send({ name: 'Alex', email: 'admin@sipi.app' });
+    expect(r.status).toBe(409);
+    expect(r.body.error).toBe('EMAIL_TAKEN');
+  });
+  test('email inválido falla con 400', async () => {
+    const r = await request(app).put('/api/users/me')
+      .set(auth(userToken))
+      .send({ name: 'Alex', email: 'no-es-email' });
+    expect(r.status).toBe(400);
+  });
+  test('cambia la contraseña y permite login con la nueva', async () => {
+    const r = await request(app).put('/api/users/me/password')
+      .set(auth(userToken))
+      .send({ current_password: 'secret12', new_password: 'nueva123' });
+    expect(r.status).toBe(200);
+    const login = await request(app).post('/api/auth/login')
+      .send({ email: 'alexnuevo@mail.com', password: 'nueva123' });
+    expect(login.status).toBe(200);
+  });
+  test('contraseña actual incorrecta falla con 401', async () => {
+    const r = await request(app).put('/api/users/me/password')
+      .set(auth(userToken))
+      .send({ current_password: 'errada', new_password: 'otra1234' });
+    expect(r.status).toBe(401);
+  });
+  test('contraseña débil falla con 400', async () => {
+    const r = await request(app).put('/api/users/me/password')
+      .set(auth(userToken))
+      .send({ current_password: 'nueva123', new_password: '123' });
+    expect(r.status).toBe(400);
+    expect(r.body.error).toBe('WEAK_PASSWORD');
+  });
+});
+
 describe('tareas y verificación', () => {
   let taskId;
   test('admin crea tarea', async () => {
@@ -207,7 +253,7 @@ describe('admin', () => {
   });
   test('listado de usuarios con puntos y nivel', async () => {
     const r = await request(app).get('/api/admin/users').set(auth(adminToken));
-    const alex = r.body.users.find((u) => u.email === 'alex@mail.com');
+    const alex = r.body.users.find((u) => u.name === 'Alex Nuevo');
     expect(alex.points).toBeGreaterThan(0);
     expect(alex.level).toBeGreaterThanOrEqual(1);
   });

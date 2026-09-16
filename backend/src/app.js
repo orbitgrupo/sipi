@@ -136,6 +136,35 @@ function createApp(db) {
     res.json({ user: row, balance: { points, usd: toUsd(points), points_per_usd: getPointsPerUsd() } });
   });
 
+  app.put('/api/users/me', requireAuth, (req, res, next) => {
+    try {
+      const { name, email } = req.body || {};
+      const nameTrim = String(name || '').trim();
+      const emailNorm = String(email || '').trim().toLowerCase();
+      if (!nameTrim) throw httpError(400, 'MISSING_FIELDS');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) throw httpError(400, 'INVALID_EMAIL');
+      const taken = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(emailNorm, req.user.id);
+      if (taken) throw httpError(409, 'EMAIL_TAKEN');
+      db.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').run(nameTrim, emailNorm, req.user.id);
+      const user = db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(req.user.id);
+      res.json({ user });
+    } catch (e) { next(e); }
+  });
+
+  app.put('/api/users/me/password', requireAuth, (req, res, next) => {
+    try {
+      const { current_password, new_password } = req.body || {};
+      if (!current_password || !new_password) throw httpError(400, 'MISSING_FIELDS');
+      if (String(new_password).length < 6) throw httpError(400, 'WEAK_PASSWORD');
+      const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(req.user.id);
+      if (!row || !verifyPassword(String(current_password), row.password_hash)) {
+        throw httpError(401, 'INVALID_CREDENTIALS');
+      }
+      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(String(new_password)), req.user.id);
+      res.json({ ok: true });
+    } catch (e) { next(e); }
+  });
+
   // ---------------- Config pública ----------------
   app.get('/api/config', (req, res) => {
     res.json({ points_per_usd: getPointsPerUsd() });

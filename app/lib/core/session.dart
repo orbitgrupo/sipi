@@ -32,6 +32,11 @@ class Session extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateProfile({required String name, required String email}) async {
+    user = await api.updateProfile(name: name, email: email);
+    notifyListeners();
+  }
+
   void logout() {
     user = null;
     balance = null;
