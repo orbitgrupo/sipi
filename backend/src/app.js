@@ -353,7 +353,13 @@ function createApp(db) {
     const pointsIssued = db.prepare("SELECT COALESCE(SUM(points),0) AS s FROM ledger WHERE type IN ('EARN','BONUS')").get().s;
     const pendingPayouts = db.prepare("SELECT COALESCE(SUM(amount_usd),0) AS s FROM redemptions WHERE status = 'pending'").get().s;
     const paidOut = db.prepare("SELECT COALESCE(SUM(amount_usd),0) AS s FROM redemptions WHERE status = 'completed'").get().s;
-    res.json({ users, active_tasks: activeTasks, surveys, pending_completions: pendingCompletions, points_issued: pointsIssued, pending_payouts_usd: pendingPayouts, paid_out_usd: paidOut });
+    const totalCompletions = db.prepare("SELECT COUNT(*) AS c FROM task_completions WHERE status = 'approved'").get().c;
+    const popularTasks = db.prepare(
+      `SELECT t.id, t.title, COUNT(c.id) AS n FROM tasks t
+       LEFT JOIN task_completions c ON c.task_id = t.id AND c.status = 'approved'
+       GROUP BY t.id ORDER BY n DESC, t.id DESC LIMIT 4`
+    ).all();
+    res.json({ users, active_tasks: activeTasks, surveys, pending_completions: pendingCompletions, points_issued: pointsIssued, pending_payouts_usd: pendingPayouts, paid_out_usd: paidOut, total_completions: totalCompletions, popular_tasks: popularTasks });
   });
 
   app.get('/api/admin/activity', requireAuth, requireAdmin, (req, res) => {

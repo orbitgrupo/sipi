@@ -250,6 +250,8 @@ describe('admin', () => {
     expect(r.status).toBe(200);
     expect(r.body.users).toBeGreaterThanOrEqual(2);
     expect(r.body.active_tasks).toBeGreaterThanOrEqual(3);
+    expect(r.body.total_completions).toBeGreaterThanOrEqual(0);
+    expect(Array.isArray(r.body.popular_tasks)).toBe(true);
   });
   test('listado de usuarios con puntos y nivel', async () => {
     const r = await request(app).get('/api/admin/users').set(auth(adminToken));

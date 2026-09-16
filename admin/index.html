@@ -35,6 +35,8 @@
   .side-brand{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;color:#fff}
   .side-brand .logo-mark{width:38px;height:38px;font-size:19px}
   .side-brand b{font-size:20px;letter-spacing:.2px}
+  .side-ver{margin-left:auto;font-size:10.5px;font-weight:700;color:#8A94A6;background:#1E2942;
+    padding:3px 9px;border-radius:12px;letter-spacing:.04em}
   nav.menu{flex:1;padding:6px 12px;overflow-y:auto}
   .menu-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#5B6B8C;padding:10px 12px 6px}
   .menu a{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;color:#C7D0E0;
@@ -211,7 +213,7 @@
 <!-- ============ APP ============ -->
 <div id="app" class="hidden">
   <aside>
-    <div class="side-brand"><div class="logo-mark">S</div><b>Sipi</b></div>
+    <div class="side-brand"><div class="logo-mark">S</div><b>Sipi</b><span class="side-ver">v2.0</span></div>
     <nav class="menu" id="menu"></nav>
     <div class="side-user">
       <div class="avatar" id="adminAvatar">A</div>
@@ -259,7 +261,7 @@ const ICONS = {
 };
 
 const MENU = [
-  ['panel','Panel'],['usuarios','Usuarios'],['tareas','Tareas'],['encuestas','Encuestas'],
+  ['panel','Dashboard'],['usuarios','Usuarios'],['tareas','Tareas'],['encuestas','Encuestas'],
   ['pagos','Pagos'],['reportes','Reportes'],['config','Configuración'],
 ];
 
@@ -342,6 +344,27 @@ function areaChart(days, key, color){
     <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     ${labels}</svg>`;
 }
+function barChart(days, key, color){
+  const W=720, H=220, P={l:36,r:8,t:12,b:28};
+  const vals = days.map(d => d[key]);
+  const max = Math.max(...vals, 5);
+  const n = days.length;
+  const slot = (W-P.l-P.r)/n, bw = Math.max(slot*0.55, 3);
+  const Y = v => P.t + (H-P.t-P.b) * (1 - v/max);
+  const barsSvg = vals.map((v,i) => {
+    const x = P.l + slot*i + (slot-bw)/2, y = Y(v), hgt = (H-P.b) - y;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(hgt,2).toFixed(1)}" rx="3" fill="${color}" opacity="${v?1:.25}"/>`;
+  }).join('');
+  const ticks = [0, .5, 1].map(f => {
+    const v = Math.round(max*f), y = Y(max*f);
+    return `<line x1="${P.l}" y1="${y}" x2="${W-P.r}" y2="${y}" stroke="#EDF0F5"/><text x="${P.l-8}" y="${y+4}" text-anchor="end" font-size="10" fill="#8A94A6">${v}</text>`;
+  }).join('');
+  const labels = days.map((d,i) => ({d, i})).filter(({i}) => i % 2 === 0).map(({d, i}) => {
+    const dt = new Date(d.date+'T12:00:00');
+    return `<text x="${(P.l + slot*i + slot/2).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#8A94A6">${dt.getDate()} ${dt.toLocaleString('es',{month:'short'})}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img">${ticks}${barsSvg}${labels}</svg>`;
+}
 function donutChart(entries){
   const total = entries.reduce((a,e) => a+e.v, 0) || 1;
   const R=70, C=2*Math.PI*R; let off=0;
@@ -372,10 +395,11 @@ function bars(entries, color){
 /* ============ PANEL (dashboard) ============ */
 async function vPanel(){
   const v = document.getElementById('view');
-  v.innerHTML = `<div class="page-head"><div><h1>Panel</h1><p>Control total de tu plataforma</p></div></div><div class="loading">Cargando…</div>`;
+  v.innerHTML = `<div class="page-head"><div><h1>Dashboard</h1><p>Resumen general de tu plataforma</p></div></div><div class="loading">Cargando…</div>`;
   try {
-    const [s, act, tk] = await Promise.all([
+    const [s, act, tk, uq, rq] = await Promise.all([
       req('GET','/api/admin/stats'), req('GET','/api/admin/activity'), req('GET','/api/admin/tasks'),
+      req('GET','/api/admin/users'), req('GET','/api/admin/redemptions'),
     ]);
     const byCat = {};
     tk.tasks.forEach(t => { if(t.active) byCat[t.category] = (byCat[t.category]||0)+1; });
@@ -384,34 +408,50 @@ async function vPanel(){
       <div class="stat"><div class="ic ${cls}">${ic}</div>
         <div><div class="v">${val}</div><div class="l">${label}</div>
         ${delta ? `<span class="d up">${delta}</span>` : `<span class="d flat">estable</span>`}</div></div>`;
+    const topUsers = [...uq.users].sort((a,b) => b.points-a.points).slice(0,5);
+    const recentPays = rq.redemptions.slice(0,5);
+    const pillFor = (st) => ({pending:'<span class="pill warn">Pendiente</span>',completed:'<span class="pill ok">Completado</span>',rejected:'<span class="pill bad">Rechazado</span>'}[st]||h(st));
     v.innerHTML = `
-      <div class="page-head"><div><h1>Panel</h1><p>Control total de tu plataforma</p></div>
+      <div class="page-head"><div><h1>Dashboard</h1><p>Resumen general de tu plataforma</p></div>
         ${s.pending_completions ? `<button class="btn primary" onclick="go('tareas');taskTab='rev';setTimeout(drawTasks,60)">${s.pending_completions} por revisar</button>` : ''}</div>
       <div class="stats">
-        ${stat(ICONS.usuarios,'blue',fmtInt(s.users),'Usuarios registrados','+12%')}
-        ${stat(ICONS.tareas,'green',fmtInt(s.active_tasks),'Tareas activas','+8%')}
-        ${stat(ICONS.encuestas,'purple',fmtInt(s.surveys||0),'Encuestas activas',null)}
-        ${stat(ICONS.pagos,'amber',fmtUsd(s.paid_out_usd),'Pagos autorizados',null)}
+        ${stat(ICONS.usuarios,'blue',fmtInt(s.users),'Usuarios totales','+12%')}
+        ${stat(ICONS.tareas,'green',fmtInt(s.total_completions||0),'Tareas completadas','+8%')}
+        ${stat(ICONS.encuestas,'purple',fmtInt(s.points_issued),'Puntos en circulación',null)}
+        ${stat(ICONS.pagos,'amber',fmtUsd(s.pending_payouts_usd),'Pagos pendientes',null)}
       </div>
       <div class="grid-2">
-        <div class="panel"><h3>Actividad de usuarios</h3><div class="sub">Nuevos usuarios · últimos 30 días</div>
-          ${areaChart(act.days,'users','#2563EB')}</div>
-        <div class="panel"><h3>Tipos de tareas</h3><div class="sub">Distribución por categoría</div>
+        <div class="panel"><h3>Actividad reciente</h3><div class="sub">Tareas completadas · últimos 14 días</div>
+          ${barChart(act.days.slice(-14),'completions','#2563EB')}</div>
+        <div class="panel"><h3>Distribución por categorías</h3><div class="sub">Tareas activas por categoría</div>
           ${donut.length ? donutChart(donut) : '<div class="empty">Sin tareas activas.</div>'}</div>
       </div>
       <div class="grid-2">
-        <div class="panel"><h3>Tareas completadas</h3><div class="sub">Envíos de usuarios · últimos 30 días</div>
-          ${areaChart(act.days,'completions','#16A34A')}</div>
-        <div class="panel"><h3>Resumen</h3><div class="sub">Estado general</div>
-          ${bars([
-            {l:'Puntos emitidos', v:s.points_issued},
-            {l:'Pagos pendientes (USD)', v:Math.round(s.pending_payouts_usd)},
-            {l:'Verificaciones pendientes', v:s.pending_completions},
-          ],'#2563EB')}
-          <p class="note">Los puntos se calculan siempre desde el ledger inmutable; el saldo nunca es un campo editable.</p>
-        </div>
-      </div>`;
-  } catch(e){ v.innerHTML = `<div class="page-head"><div><h1>Panel</h1></div></div><p class="error">Error: ${h(friendlyErr(e))}</p>`; }
+        <div class="panel"><h3>Tareas populares</h3><div class="sub">Más completadas por los usuarios</div>
+          ${(s.popular_tasks||[]).length ? (s.popular_tasks||[]).map((t,i) => `
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F1F4F9">
+              <span style="width:28px;height:28px;border-radius:9px;background:#EEF2FF;color:#2563EB;font-weight:800;font-size:13px;display:inline-flex;align-items:center;justify-content:center">${i+1}</span>
+              <div style="flex:1"><div style="font-weight:600;font-size:13.5px">${h(t.title)}</div></div>
+              <span class="pill">${fmtInt(t.n)} completadas</span></div>`).join('')
+          : '<div class="empty">Sin datos todavía.</div>'}</div>
+        <div class="panel"><h3>Usuarios más activos</h3><div class="sub">Por saldo de puntos</div>
+          ${topUsers.length ? `<div class="table-wrap" style="box-shadow:none"><table style="min-width:0">
+            <tr><th>Usuario</th><th style="text-align:right">Puntos</th></tr>
+            ${topUsers.map(u => `<tr>
+              <td><div class="user-cell"><span class="avatar-sm" style="background:${avatarColor(u.name)}">${h(initial(u.name))}</span>
+                <div><div class="cell-main">${h(u.name)}</div><div class="cell-sub">${h(u.email)}</div></div></div></td>
+              <td style="text-align:right"><b>${fmtInt(u.points)}</b></td></tr>`).join('')}</table></div>`
+          : '<div class="empty">Sin usuarios.</div>'}</div>
+      </div>
+      <div class="panel"><h3>Canjes recientes</h3><div class="sub">Últimas solicitudes de pago</div>
+        ${recentPays.length ? `<div class="table-wrap" style="box-shadow:none"><table style="min-width:0">
+          <tr><th>Usuario</th><th>Canje</th><th>Monto</th><th>Estado</th></tr>
+          ${recentPays.map(r => `<tr>
+            <td><div class="user-cell"><span class="avatar-sm" style="background:${avatarColor(r.user_name)}">${h(initial(r.user_name))}</span>
+              <div><div class="cell-main">${h(r.user_name)}</div><div class="cell-sub">${h(r.user_email)}</div></div></div></td>
+            <td>${fmtInt(r.points)} pts</td><td><b>${fmtUsd(r.amount_usd)}</b></td><td>${pillFor(r.status)}</td></tr>`).join('')}</table></div>`
+        : '<div class="empty">Sin canjes todavía.</div>'}</div>`;
+  } catch(e){ v.innerHTML = `<div class="page-head"><div><h1>Dashboard</h1></div></div><p class="error">Error: ${h(friendlyErr(e))}</p>`; }
 }
 
 /* ============ USUARIOS ============ */
