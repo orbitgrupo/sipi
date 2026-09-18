@@ -531,11 +531,12 @@ class _PointsHistoryScreenState extends State<PointsHistoryScreen> {
   Future<void> _load() async {
     try {
       final all = await widget.session.api.ledger();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _items = all;
           _loading = false;
         });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -622,11 +623,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _load() async {
     try {
       final all = await widget.session.api.notifications();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _items = all;
           _loading = false;
         });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }

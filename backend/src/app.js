@@ -376,7 +376,9 @@ function createApp(db) {
   });
 
   app.get('/api/admin/tasks', requireAuth, requireAdmin, (req, res) => {
-    const tasks = db.prepare('SELECT * FROM tasks ORDER BY id DESC').all();
+    const tasks = db.prepare(`SELECT t.*,
+      EXISTS(SELECT 1 FROM surveys s WHERE s.task_id = t.id) AS has_survey
+      FROM tasks t ORDER BY t.id DESC`).all();
     res.json({ tasks });
   });
 

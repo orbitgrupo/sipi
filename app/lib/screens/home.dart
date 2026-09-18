@@ -84,11 +84,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _load() async {
     try {
       final tasks = await widget.session.api.tasks();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _recommended = tasks.take(4).toList();
           _loading = false;
         });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }

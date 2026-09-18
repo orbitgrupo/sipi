@@ -681,15 +681,17 @@ function drawSurveyRows(){
   const q = (document.getElementById('sq').value||'').toLowerCase();
   const list = (window._surveyTasks||[]).filter(t => t.title.toLowerCase().includes(q));
   document.getElementById('sBody').innerHTML = list.length ? list.map(t => `<tr>
-    <td><div class="cell-main">${h(t.title)}</div><div class="cell-sub">${t.verification==='survey'?'Con encuesta configurada':'Sin encuesta'}</div></td>
+    <td><div class="cell-main">${h(t.title)}</div><div class="cell-sub">${t.has_survey?'Con encuesta configurada':'Sin encuesta'}</div></td>
     <td><span class="pill info">${h(CATS[t.category]||t.category)}</span></td>
     <td><b>${t.points}</b></td>
     <td>${t.active?'<span class="pill ok">Activa</span>':'<span class="pill warn">Pausada</span>'}</td>
-    <td><div class="row-actions"><button class="btn primary sm" onclick="surveyModal(${t.id},'${h(t.title).replace(/'/g,'')}')">Editar encuesta</button></div></td>
+    <td><div class="row-actions"><button class="btn primary sm" onclick="surveyModal(${t.id})">Editar encuesta</button></div></td>
   </tr>`).join('') : `<tr><td colspan="5"><div class="empty">Sin tareas.</div></td></tr>`;
 }
 let surveyQs = [];
-function surveyModal(taskId, title){
+async function surveyModal(taskId){
+  const task = (window._surveyTasks||[]).find(t => t.id === taskId);
+  const title = task?.title || '';
   surveyQs = [{type:'single', text:'', options:['',''], required:true, min:1, max:5}];
   openModal(`
     <h3>Encuesta</h3><div class="msub">${h(title||'')}</div>
@@ -700,6 +702,19 @@ function surveyModal(taskId, title){
     <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancelar</button>
       <button class="btn primary" onclick="saveSurvey(${taskId})">Guardar encuesta</button></div>`);
   drawQs();
+  if (!task?.has_survey) return;
+  try {
+    const {survey} = await req('GET',`/api/tasks/${taskId}/survey`);
+    if (!document.getElementById('sv_title')) return;
+    document.getElementById('sv_title').value = survey.title || 'Encuesta';
+    surveyQs = Array.isArray(survey.questions) && survey.questions.length
+      ? survey.questions.map(q => ({...q, options:[...(q.options||[])], min:q.min||1, max:q.max||5}))
+      : surveyQs;
+    drawQs();
+  } catch(e) {
+    const err = document.getElementById('mErr');
+    if (err) err.textContent = 'No se pudo cargar la encuesta: ' + friendlyErr(e);
+  }
 }
 function addQ(){ surveyQs.push({type:'single', text:'', options:['',''], required:false, min:1, max:5}); drawQs(); }
 function delQ(i){ surveyQs.splice(i,1); drawQs(); }

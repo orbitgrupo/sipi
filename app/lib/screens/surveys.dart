@@ -109,8 +109,9 @@ class _SurveyAnswerScreenState extends State<SurveyAnswerScreen> {
           _loading = false;
           for (final q in s.questions) {
             if (q.type == 'multiple') _answers[q.id] = <String>[];
-            if (q.type == 'scale')
+            if (q.type == 'scale') {
               _answers[q.id] = ((q.min + q.max) / 2).round();
+            }
           }
         });
       }
@@ -222,20 +223,18 @@ class _QuestionCard extends StatelessWidget {
   Widget _input() {
     switch (question.type) {
       case 'single':
-        return RadioGroup<String>(
-          groupValue: value as String?,
-          onChanged: (v) => onChanged(v),
-          child: Column(
-            children: question.options.map((o) {
-              return RadioListTile<String>(
-                value: o,
-                title: Text(o),
-                activeColor: SipiColors.primary,
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-              );
-            }).toList(),
-          ),
+        return Column(
+          children: question.options.map((o) {
+            return RadioListTile<String>(
+              value: o,
+              groupValue: value as String?,
+              onChanged: (v) => onChanged(v),
+              title: Text(o),
+              activeColor: SipiColors.primary,
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+            );
+          }).toList(),
         );
       case 'multiple':
         {

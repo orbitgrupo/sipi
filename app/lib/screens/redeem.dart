@@ -232,11 +232,12 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   Future<void> _load() async {
     try {
       final all = await widget.session.api.redemptions();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _items = all;
           _loading = false;
         });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
