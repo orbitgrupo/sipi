@@ -41,12 +41,11 @@ class _TasksScreenState extends State<TasksScreen> {
     try {
       final tasks = await widget.session.api
           .tasks(category: _tab == 'todas' ? null : _tab, q: _query);
-      if (mounted) {
+      if (mounted)
         setState(() {
           _tasks = tasks;
           _loading = false;
         });
-      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -166,13 +165,12 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   Future<void> _load() async {
     try {
       final d = await widget.session.api.taskDetail(widget.taskId);
-      if (mounted) {
+      if (mounted)
         setState(() {
           _task = d.task;
           _mine = d.mine;
           _loading = false;
         });
-      }
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);

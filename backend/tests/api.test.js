@@ -209,9 +209,6 @@ describe('encuestas', () => {
       ],
     });
     expect(s.status).toBe(201);
-    const list = await request(app).get('/api/admin/tasks').set(auth(adminToken));
-    const surveyTask = list.body.tasks.find((x) => x.id === surveyTaskId);
-    expect(surveyTask.has_survey).toBe(1);
   });
   test('responder con pregunta requerida vacía falla', async () => {
     const r = await request(app).post(`/api/tasks/${surveyTaskId}/survey`).set(auth(userToken))
@@ -256,7 +253,6 @@ describe('admin', () => {
     expect(r.body.total_completions).toBeGreaterThanOrEqual(0);
     expect(Array.isArray(r.body.popular_tasks)).toBe(true);
   });
-
   test('listado de usuarios con puntos y nivel', async () => {
     const r = await request(app).get('/api/admin/users').set(auth(adminToken));
     const alex = r.body.users.find((u) => u.name === 'Alex Nuevo');

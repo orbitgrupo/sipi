@@ -15,26 +15,40 @@
     --ok:#16A34A; --ok-bg:#E2F6E9; --warn:#E8830C; --warn-bg:#FDEFD9;
     --bad:#DC2626; --bad-bg:#FCEAEA; --info:#2563EB; --info-bg:#EAF1FE;
     --radius:12px; --shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 22px -12px rgba(16,24,40,.12);
+    --grad-blue:linear-gradient(135deg,#60A5FA,#1D4ED8);
+    --grad-violet:linear-gradient(135deg,#A78BFA,#6D28D9);
+    --grad-green:linear-gradient(135deg,#34D399,#059669);
+    --grad-amber:linear-gradient(135deg,#FBBF24,#F97316);
+    --grad-pink:linear-gradient(135deg,#F472B6,#DB2777);
+    --grad-brand:linear-gradient(135deg,#3B82F6,#1D4ED8);
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+  body{font-family:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1100px 480px at 88% -8%, rgba(37,99,235,.10), transparent 62%),
+      radial-gradient(820px 420px at -12% 24%, rgba(139,92,246,.09), transparent 60%),
+      radial-gradient(700px 500px at 50% 115%, rgba(16,185,129,.06), transparent 60%),
+      #EDF1F7}
   .hidden{display:none!important}
 
   /* ---------- Login ---------- */
   #login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
-    background:linear-gradient(135deg,#0C1526 0%,#16223C 60%,#1E2F5E 100%)}
+    background:linear-gradient(135deg,#0C1526,#16223C,#1E2F5E,#3B1D5E,#0C1526);background-size:300% 300%;animation:lbg 14s ease infinite}
+  @keyframes lbg{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
   .login-box{background:#fff;border-radius:20px;padding:40px;width:100%;max-width:390px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
   .login-brand{display:flex;align-items:center;gap:11px;margin-bottom:6px}
   .logo-mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#3B82F6,#1D4ED8);
-    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:20px}
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:20px;
+    box-shadow:0 6px 18px -4px rgba(59,130,246,.7)}
   .login-box h1{font-size:22px}
   .login-box p{color:var(--muted);margin:6px 0 18px;font-size:13px}
   .error{color:var(--bad);font-size:12.5px;font-weight:700;margin-top:8px;min-height:18px}
 
   /* ---------- Layout ---------- */
   #app{display:flex;min-height:100vh}
-  aside{width:224px;background:var(--sidebar);color:#C2CDE3;display:flex;flex-direction:column;
-    position:sticky;top:0;height:100vh;flex-shrink:0;z-index:20}
+  aside{width:224px;background:linear-gradient(180deg,#0A1120 0%,#0E1830 45%,#13224A 100%);color:#C2CDE3;
+    display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0;z-index:20;
+    box-shadow:4px 0 28px rgba(6,12,26,.35);border-right:1px solid rgba(127,168,245,.14)}
   .side-brand{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;color:#fff}
   .side-brand .logo-mark{width:38px;height:38px;font-size:19px}
   .side-brand b{font-size:20px;font-weight:800}
@@ -45,8 +59,9 @@
     text-decoration:none;font-weight:700;font-size:13.5px;cursor:pointer;margin-bottom:2px;transition:.15s}
   .menu a svg{width:18px;height:18px;flex-shrink:0;opacity:.85}
   .menu a:hover{background:var(--sidebar-hover);color:#fff}
-  .menu a.active{background:var(--sidebar-active);color:#fff}
-  .menu a.active svg{opacity:1;color:#7FA8F5}
+  .menu a.active{background:linear-gradient(135deg,#2563EB,#1D4ED8);color:#fff;
+    box-shadow:0 8px 18px -6px rgba(37,99,235,.65)}
+  .menu a.active svg{opacity:1;color:#fff}
   .side-foot{padding:16px;border-top:1px solid #1A2540}
   .sf-user{display:flex;align-items:center;gap:10px}
   .sf-user .avatar{width:38px;height:38px;border-radius:50%;background:#2A3B5E;flex-shrink:0;
@@ -61,56 +76,73 @@
   .content{flex:1;min-width:0;display:flex;flex-direction:column}
   main{flex:1;min-width:0;padding:26px 30px 40px;max-width:1280px;width:100%;margin:0 auto}
   .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
-  .page-head h1{font-size:20px;font-weight:800;letter-spacing:-.01em}
+  .page-head h1{font-size:21px;font-weight:900;letter-spacing:-.02em;position:relative;padding-bottom:9px}
+  .page-head h1::after{content:'';position:absolute;left:0;bottom:0;width:46px;height:4px;border-radius:4px;
+    background:linear-gradient(90deg,#2563EB,#8B5CF6)}
   .page-head .sub{color:var(--muted);font-size:12.5px;margin-top:3px;font-weight:600}
 
   /* ---------- Stat cards ---------- */
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
-  .stat{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);
-    display:flex;gap:14px;align-items:flex-start;border:1px solid var(--border)}
-  .stat .ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .stat .ic svg{width:21px;height:21px}
-  .ic.blue{background:#E3EDFF;color:#1D4ED8}
-  .ic.green{background:#DFF5E5;color:#15803D}
-  .ic.purple{background:#ECE5FD;color:#6D28D9}
-  .ic.amber{background:#FDEED3;color:#B45309}
-  .stat .v{font-size:23px;font-weight:800;line-height:1.15;letter-spacing:-.01em}
+  .stat{background:var(--card);border-radius:16px;padding:18px;box-shadow:var(--shadow);
+    display:flex;gap:14px;align-items:flex-start;border:1px solid var(--border);
+    position:relative;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease}
+  .stat:hover{transform:translateY(-3px);box-shadow:0 18px 34px -14px rgba(16,24,40,.28)}
+  .stat::before{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:var(--ac,#2563EB)}
+  .stats .stat:nth-child(1){--ac:#3B82F6}.stats .stat:nth-child(2){--ac:#10B981}
+  .stats .stat:nth-child(3){--ac:#8B5CF6}.stats .stat:nth-child(4){--ac:#F59E0B}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .stat{animation:rise .5s ease backwards}
+  .stats .stat:nth-child(2){animation-delay:.07s}
+  .stats .stat:nth-child(3){animation-delay:.14s}
+  .stats .stat:nth-child(4){animation-delay:.21s}
+  .stat .ic{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+  .stat .ic svg{width:22px;height:22px}
+  .ic.blue{background:var(--grad-blue);box-shadow:0 10px 20px -8px rgba(37,99,235,.65)}
+  .ic.green{background:var(--grad-green);box-shadow:0 10px 20px -8px rgba(5,150,105,.6)}
+  .ic.purple{background:var(--grad-violet);box-shadow:0 10px 20px -8px rgba(124,58,237,.6)}
+  .ic.amber{background:var(--grad-amber);box-shadow:0 10px 20px -8px rgba(249,115,22,.6)}
+  .stat .v{font-size:25px;font-weight:900;line-height:1.15;letter-spacing:-.02em}
   .stat .l{color:var(--muted);font-size:12px;margin-top:3px;font-weight:700}
-  .stat .delta{font-size:11.5px;font-weight:800;margin-top:6px;color:var(--ok)}
+  .stat .delta{font-size:11.5px;font-weight:800;margin-top:8px;color:#15803D;background:#DFF5E5;
+    border-radius:8px;padding:3px 9px;display:inline-block}
 
   .grid-2{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:20px}
   @media(max-width:1000px){.grid-2{grid-template-columns:1fr}}
-  .panel{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:22px}
-  .panel h3{font-size:15px;font-weight:800;margin-bottom:3px}
+  .panel{background:var(--card);border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--border);padding:22px}
+  .panel h3{font-size:15px;font-weight:800;margin-bottom:3px;display:flex;align-items:center;gap:9px}
+  .panel h3::before{content:'';width:9px;height:9px;border-radius:3px;background:linear-gradient(135deg,#2563EB,#8B5CF6);
+    box-shadow:0 3px 8px -2px rgba(37,99,235,.6)}
   .panel .sub{color:var(--muted);font-size:12px;margin-bottom:16px;font-weight:600}
 
   /* ---------- Tables ---------- */
-  .table-wrap{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;overflow-x:auto}
+  .table-wrap{background:var(--card);border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;overflow-x:auto}
   table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px}
   th,td{text-align:left;padding:13px 18px;border-bottom:1px solid #F0F3F8;vertical-align:middle}
-  th{color:#9AA3B5;font-size:12px;font-weight:700}
+  th{color:#8B93A7;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
   tr:last-child td{border-bottom:none}
   tbody tr{transition:background .12s}
-  tbody tr:hover{background:#F8FAFD}
+  tbody tr:hover{background:linear-gradient(90deg,rgba(37,99,235,.05),rgba(139,92,246,.05))}
   .cell-main{font-weight:700}
   .cell-sub{color:var(--muted);font-size:12px;margin-top:2px}
   .avatar-sm{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
-    color:#fff;font-weight:800;font-size:12.5px;margin-right:10px;vertical-align:middle;flex-shrink:0}
+    color:#fff;font-weight:800;font-size:12.5px;margin-right:10px;vertical-align:middle;flex-shrink:0;
+    box-shadow:0 0 0 2px #fff,0 4px 10px rgba(16,24,40,.18)}
   .user-cell{display:flex;align-items:center;min-width:0}
 
   .pill{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11.5px;font-weight:800;white-space:nowrap}
   .pill.ok,.pill.active,.pill.completed,.pill.approved{background:var(--ok-bg);color:var(--ok)}
   .pill.warn,.pill.pending{background:var(--warn-bg);color:var(--warn)}
   .pill.bad,.pill.inactive,.pill.rejected{background:var(--bad-bg);color:var(--bad)}
-  .pill.info{background:var(--info-bg);color:var(--info)}
+  .pill.info{background:linear-gradient(135deg,#DBEAFE,#BFDBFE);color:#1D4ED8}
   .pill.neutral{background:#EEF1F6;color:#64748B}
 
   /* ---------- Buttons / inputs ---------- */
   .btn{border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;
     display:inline-flex;align-items:center;gap:8px;transition:.15s;font-family:inherit}
   .btn svg{width:15px;height:15px}
-  .btn.primary{background:var(--primary);color:#fff;box-shadow:0 6px 14px -6px rgba(37,99,235,.5)}
-  .btn.primary:hover{background:var(--primary-dark)}
+  .btn.primary{background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#fff;
+    box-shadow:0 8px 18px -6px rgba(37,99,235,.6)}
+  .btn.primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
   .btn.ghost{background:#E9EDF3;color:var(--text)}
   .btn.ghost:hover{background:#DDE3EC}
   .btn.ok{background:var(--ok-bg);color:var(--ok)}
@@ -143,7 +175,8 @@
   .switch .track{position:absolute;inset:0;background:#D3DAE5;border-radius:20px;transition:.2s}
   .switch .track:before{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;
     top:3px;left:3px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-  .switch input:checked + .track{background:var(--primary)}
+  .switch input:checked + .track{background:linear-gradient(135deg,#3B82F6,#1D4ED8);
+    box-shadow:0 4px 10px -2px rgba(37,99,235,.55)}
   .switch input:checked + .track:before{transform:translateX(18px)}
 
   /* Tabs */
@@ -189,7 +222,7 @@
   .dl-row i{width:11px;height:11px;border-radius:4px;flex-shrink:0}
   .dl-row b{margin-left:auto;font-weight:800}
 
-  .review-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  .review-card{background:var(--card);border:1px solid var(--border);border-radius:16px;
     box-shadow:var(--shadow);padding:18px;margin-bottom:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
   .review-card .grow{flex:1;min-width:220px}
   .evid{background:#F7F9FC;border:1px dashed var(--border);border-radius:8px;padding:8px 12px;font-size:12.5px;
@@ -364,28 +397,41 @@ function areaChart(days, key, color){
     return `<text x="${X(i)}" y="${H-9}" text-anchor="middle" font-size="10.5" fill="#9AA3B5" font-weight="700">${lab}</text>`;
   }).join('');
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img">
-    <defs><linearGradient id="ag${key}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${color}" stop-opacity=".25"/><stop offset="1" stop-color="${color}" stop-opacity="0"/>
-    </linearGradient></defs>
+    <defs>
+      <linearGradient id="ag${key}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${color}" stop-opacity=".38"/><stop offset=".6" stop-color="${color}" stop-opacity=".12"/><stop offset="1" stop-color="${color}" stop-opacity="0"/>
+      </linearGradient>
+      <filter id="aglow${key}" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
     ${ticks}
     <polygon points="${P.l},${Y(0)} ${pts} ${X(days.length-1)},${Y(0)}" fill="url(#ag${key})"/>
-    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" filter="url(#aglow${key})"/>
+    <circle cx="${X(days.length-1)}" cy="${Y(vals[vals.length-1])}" r="9" fill="${color}" opacity=".22"/>
+    <circle cx="${X(days.length-1)}" cy="${Y(vals[vals.length-1])}" r="4.5" fill="${color}" stroke="#fff" stroke-width="2.5"/>
     ${labels}</svg>`;
 }
 function donutChart(entries){
   const total = entries.reduce((a,e) => a+e.v, 0) || 1;
   const R=62, C=2*Math.PI*R; let off=0;
-  const segs = entries.map((e) => {
+  const defs = entries.map((e,i) => `<linearGradient id="dg${i}" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${e.c1}"/><stop offset="1" stop-color="${e.c2}"/></linearGradient>`).join('');
+  const segs = entries.map((e,i) => {
     const frac = e.v/total, len = Math.max(frac*C - 3, 2);
-    const s = `<circle cx="80" cy="80" r="${R}" fill="none" stroke="${e.c}" stroke-width="24"
+    const s = `<circle cx="80" cy="80" r="${R}" fill="none" stroke="url(#dg${i})" stroke-width="24"
       stroke-dasharray="${len.toFixed(1)} ${(C-len).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" stroke-linecap="butt" transform="rotate(-90 80 80)"/>`;
     off += frac*C; return s;
   }).join('');
   return `<div class="donut-wrap">
     <svg viewBox="0 0 160 160" class="donut-svg" role="img">
-      <circle cx="80" cy="80" r="${R}" fill="none" stroke="#EEF1F6" stroke-width="24"/>${segs}</svg>
+      <defs>${defs}</defs>
+      <circle cx="80" cy="80" r="${R}" fill="none" stroke="#EEF1F6" stroke-width="24"/>${segs}
+      <text x="80" y="78" text-anchor="middle" font-size="25" font-weight="900" fill="#101C30" font-family="Nunito,sans-serif">${total}</text>
+      <text x="80" y="97" text-anchor="middle" font-size="11" font-weight="700" fill="#9AA3B5" font-family="Nunito,sans-serif">tareas</text>
+    </svg>
     <div class="donut-legend">${entries.map(e =>
-      `<div class="dl-row"><i style="background:${e.c}"></i><span>${h(e.l)}</span><b>${Math.round(e.v/total*100)}%</b></div>`).join('')}
+      `<div class="dl-row"><i style="background:linear-gradient(135deg,${e.c1},${e.c2})"></i><span>${h(e.l)}</span><b>${Math.round(e.v/total*100)}%</b></div>`).join('')}
     </div></div>`;
 }
 function bars(entries, color){
@@ -394,7 +440,7 @@ function bars(entries, color){
     <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px">
       <span style="font-weight:700">${h(e.l)}</span><b>${fmtInt(e.v)}</b></div>
     <div style="background:#EEF1F6;border-radius:6px;height:9px">
-      <div style="width:${(e.v/max*100).toFixed(1)}%;background:${color};height:9px;border-radius:6px"></div></div></div>`).join('');
+      <div style="width:${(e.v/max*100).toFixed(1)}%;background:linear-gradient(90deg,${color},#8B5CF6);height:9px;border-radius:6px;box-shadow:0 3px 8px -2px ${color}88"></div></div></div>`).join('');
 }
 
 /* ============ DASHBOARD ============ */
@@ -409,11 +455,12 @@ async function vPanel(){
     const stat = (ic, cls, val, label, delta) => `
       <div class="stat"><div class="ic ${cls}">${ic}</div>
         <div><div class="v">${val}</div><div class="l">${label}</div><div class="delta">${delta}</div></div></div>`;
-    const catDef = {social:['Redes sociales','#2563EB'], encuestas:['Encuestas','#8B5CF6'], promociones:['Ofertas','#F59E0B']};
+    const catDef = {social:['Redes sociales','#60A5FA','#1D4ED8'], encuestas:['Encuestas','#A78BFA','#6D28D9'], promociones:['Ofertas','#FBBF24','#F97316']};
     const agg = {};
     activeTasks.forEach(t => { const k = catDef[t.category] ? t.category : 'otros'; agg[k] = (agg[k]||0)+1; });
     const donut = ['social','encuestas','promociones','otros'].filter(k => agg[k]).map(k => ({
-      l: k === 'otros' ? 'Otros' : catDef[k][0], v: agg[k], c: k === 'otros' ? '#94A3B8' : catDef[k][1],
+      l: k === 'otros' ? 'Otros' : catDef[k][0], v: agg[k],
+      c1: k === 'otros' ? '#CBD5E1' : catDef[k][1], c2: k === 'otros' ? '#94A3B8' : catDef[k][2],
     }));
     const days = (act.days || []).slice(-30);
     v.innerHTML = `
@@ -681,17 +728,15 @@ function drawSurveyRows(){
   const q = (document.getElementById('sq').value||'').toLowerCase();
   const list = (window._surveyTasks||[]).filter(t => t.title.toLowerCase().includes(q));
   document.getElementById('sBody').innerHTML = list.length ? list.map(t => `<tr>
-    <td><div class="cell-main">${h(t.title)}</div><div class="cell-sub">${t.has_survey?'Con encuesta configurada':'Sin encuesta'}</div></td>
+    <td><div class="cell-main">${h(t.title)}</div><div class="cell-sub">${t.verification==='survey'?'Con encuesta configurada':'Sin encuesta'}</div></td>
     <td><span class="pill info">${h(CATS[t.category]||t.category)}</span></td>
     <td><b>${t.points}</b></td>
     <td>${t.active?'<span class="pill ok">Activa</span>':'<span class="pill warn">Pausada</span>'}</td>
-    <td><div class="row-actions"><button class="btn primary sm" onclick="surveyModal(${t.id})">Editar encuesta</button></div></td>
+    <td><div class="row-actions"><button class="btn primary sm" onclick="surveyModal(${t.id},'${h(t.title).replace(/'/g,'')}')">Editar encuesta</button></div></td>
   </tr>`).join('') : `<tr><td colspan="5"><div class="empty">Sin tareas.</div></td></tr>`;
 }
 let surveyQs = [];
-async function surveyModal(taskId){
-  const task = (window._surveyTasks||[]).find(t => t.id === taskId);
-  const title = task?.title || '';
+function surveyModal(taskId, title){
   surveyQs = [{type:'single', text:'', options:['',''], required:true, min:1, max:5}];
   openModal(`
     <h3>Encuesta</h3><div class="msub">${h(title||'')}</div>
@@ -702,19 +747,6 @@ async function surveyModal(taskId){
     <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancelar</button>
       <button class="btn primary" onclick="saveSurvey(${taskId})">Guardar encuesta</button></div>`);
   drawQs();
-  if (!task?.has_survey) return;
-  try {
-    const {survey} = await req('GET',`/api/tasks/${taskId}/survey`);
-    if (!document.getElementById('sv_title')) return;
-    document.getElementById('sv_title').value = survey.title || 'Encuesta';
-    surveyQs = Array.isArray(survey.questions) && survey.questions.length
-      ? survey.questions.map(q => ({...q, options:[...(q.options||[])], min:q.min||1, max:q.max||5}))
-      : surveyQs;
-    drawQs();
-  } catch(e) {
-    const err = document.getElementById('mErr');
-    if (err) err.textContent = 'No se pudo cargar la encuesta: ' + friendlyErr(e);
-  }
 }
 function addQ(){ surveyQs.push({type:'single', text:'', options:['',''], required:false, min:1, max:5}); drawQs(); }
 function delQ(i){ surveyQs.splice(i,1); drawQs(); }

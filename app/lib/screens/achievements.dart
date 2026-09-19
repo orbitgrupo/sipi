@@ -38,12 +38,11 @@ class _AchievementsScreenState extends State<AchievementsScreen>
   Future<void> _load() async {
     try {
       final all = await widget.session.api.achievements();
-      if (mounted) {
+      if (mounted)
         setState(() {
           _items = all;
           _loading = false;
         });
-      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -159,10 +158,9 @@ class _AchievementsScreenState extends State<AchievementsScreen>
   }
 
   Widget _badgesGrid() {
-    if (_items.isEmpty) {
+    if (_items.isEmpty)
       return const EmptyState(
           icon: Icons.emoji_events_outlined, message: 'Aún no hay logros.');
-    }
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

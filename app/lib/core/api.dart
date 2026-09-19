@@ -40,12 +40,7 @@ class ApiException implements Exception {
 class SipiApi {
   final String baseUrl;
   String? token;
-  SipiApi({
-    this.baseUrl = const String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'http://10.0.2.2:3000',
-    ),
-  });
+  SipiApi({this.baseUrl = 'http://10.0.2.2:3000'});
 
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',

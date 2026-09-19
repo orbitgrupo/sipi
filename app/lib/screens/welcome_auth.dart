@@ -201,7 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             SipiButton(
                 label: 'Crear cuenta', loading: _loading, onPressed: _submit),
             const SizedBox(height: 20),
-            const Row(children: [
+            Row(children: const [
               Expanded(child: Divider()),
               Padding(
                   padding: EdgeInsets.symmetric(horizontal: 12),
