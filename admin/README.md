@@ -44,7 +44,7 @@ python3 -m http.server 8080
 | Página | Qué hace |
 |---|---|
 | **Panel** | Tarjetas: Usuarios totales, Tareas activas, Encuestas activas, Pagos realizados. Gráfica de actividad de usuarios (30 días). Dona de tipos de tareas por categoría. Acceso directo a envíos por revisar. |
-| **Usuarios** | Buscador; tabla con avatar, puntos, nivel, rol y estado; acciones: hacer/quitar admin, activar/desactivar (`PATCH /api/admin/users/:id`). |
+| **Usuarios** | Buscador; tabla con avatar, puntos, nivel, rol y estado; acciones: hacer/quitar admin, activar/desactivar (`PATCH /api/admin/users/:id`). Las cuentas nuevas aparecen como **Pendiente** con botón **Aprobar**. |
 | **Tareas** | Buscador + filtro por categoría; **Crear tarea** (modal); tabla con título, categoría, puntos, estado; acciones: activar/pausar, editar, adjuntar encuesta. Pestaña **Por revisar**: aprobar (`POST …/approve`, acredita puntos) o rechazar envíos. |
 | **Encuestas** | Editor de preguntas por tarea: tipos única, múltiple, sí/no, escala y texto; opciones y obligatoriedad configurables (`POST /api/admin/tasks/:id/survey`). |
 | **Ofertas** | Gestión de tareas de categoría `promociones`. |

@@ -91,3 +91,7 @@ lib/
 `Session` (en `core/session.dart`) guarda token y usuario, expone el saldo
 (`GET /api/balance`) y notifica cambios a la UI. El cliente nunca calcula
 montos: los puntos por tarea y la conversión a USD vienen del servidor.
+
+El registro no exige verificar el correo: la cuenta nace pendiente y el
+perfil muestra "Cuenta pendiente de aprobación" hasta que un admin la
+apruebe desde el panel.

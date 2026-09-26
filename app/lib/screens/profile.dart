@@ -57,6 +57,29 @@ class ProfileScreen extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         fontSize: 13)),
               ),
+              if (u != null && !u.approved) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                      color: SipiColors.warningSoft,
+                      borderRadius: BorderRadius.circular(20)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.hourglass_empty,
+                          size: 14, color: SipiColors.warningDark),
+                      SizedBox(width: 6),
+                      Text('Cuenta pendiente de aprobación',
+                          style: TextStyle(
+                              color: SipiColors.warningDark,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13)),
+                    ],
+                  ),
+                ),
+              ],
             ]),
           ),
           const SizedBox(height: 24),

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user','admin')),
   status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','inactive')),
+  approved INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -146,6 +147,11 @@ function openDb(dbPath) {
   db.exec('PRAGMA journal_mode = WAL;');
   db.exec('PRAGMA foreign_keys = ON;');
   db.exec(SCHEMA);
+  // Migración: cuentas creadas antes de la aprobación de usuarios.
+  const cols = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
+  if (!cols.includes('approved')) {
+    db.exec('ALTER TABLE users ADD COLUMN approved INTEGER NOT NULL DEFAULT 1');
+  }
   seed(db);
   return db;
 }

@@ -4,16 +4,19 @@ class User {
   final String name;
   final String email;
   final String role;
+  final bool approved;
   User(
       {required this.id,
       required this.name,
       required this.email,
-      required this.role});
+      required this.role,
+      this.approved = true});
   factory User.fromJson(Map<String, dynamic> j) => User(
       id: j['id'],
       name: j['name'],
       email: j['email'],
-      role: j['role'] ?? 'user');
+      role: j['role'] ?? 'user',
+      approved: j['approved'] != 0 && j['approved'] != false);
 }
 
 class Balance {

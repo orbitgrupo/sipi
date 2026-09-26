@@ -510,8 +510,9 @@ function drawUsers(){
     <td><div class="user-cell"><span class="avatar-sm" style="background:${avatarColor(u.name)}">${h(initial(u.name))}</span>
       <div><div class="cell-main">${h(u.name)}</div><div class="cell-sub">${h(u.email)}</div></div></div></td>
     <td><b>${fmtInt(u.points)}</b></td><td>${u.level}</td>
-    <td>${u.status==='active' ? '<span class="pill ok">Activo</span>' : '<span class="pill bad">Inactivo</span>'}</td>
+    <td>${!u.approved ? '<span class="pill warn">Pendiente</span>' : (u.status==='active' ? '<span class="pill ok">Activo</span>' : '<span class="pill bad">Inactivo</span>')}</td>
     <td><div class="row-actions">
+      ${!u.approved ? `<button class="btn sm ok" onclick="approveUser(${u.id})">Aprobar</button>` : ''}
       <button class="btn sm ${u.role==='admin'?'ghost':'ok'}" onclick="setRole(${u.id},'${u.role==='admin'?'user':'admin'}')">${u.role==='admin'?'Quitar admin':'Hacer admin'}</button>
       <button class="btn sm ${u.status==='active'?'bad':'ok'}" onclick="setStatus(${u.id},'${u.status==='active'?'inactive':'active'}')">${u.status==='active'?'Desactivar':'Activar'}</button>
     </div></td></tr>`).join('')
@@ -524,6 +525,11 @@ async function setRole(id, role){
 }
 async function setStatus(id, status){
   try { await req('PATCH',`/api/admin/users/${id}`,{status}); toast('Estado actualizado.'); vUsuarios(); }
+  catch(e){ toast('Error: '+friendlyErr(e), true); }
+}
+async function approveUser(id){
+  if(!confirm('¿Aprobar esta cuenta? El usuario dejará de verse como pendiente.')) return;
+  try { await req('PATCH',`/api/admin/users/${id}`,{approved:1}); toast('Cuenta aprobada.'); vUsuarios(); }
   catch(e){ toast('Error: '+friendlyErr(e), true); }
 }
 

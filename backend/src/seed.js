@@ -6,7 +6,7 @@ const db = openDb(process.env.DB_PATH);
 
 const adminEmail = 'admin@sipi.app';
 if (!db.prepare('SELECT id FROM users WHERE email = ?').get(adminEmail)) {
-  db.prepare("INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'admin')")
+  db.prepare("INSERT INTO users (name, email, password_hash, role, approved) VALUES (?, ?, ?, 'admin', 1)")
     .run('Admin Sipi', adminEmail, hashPassword('admin123'));
   console.log('[seed] admin creado: admin@sipi.app / admin123');
 }

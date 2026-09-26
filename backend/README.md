@@ -27,7 +27,7 @@ src/
 ├── achievements.js  # evaluación de logros dentro de cada evento
 └── seed.js          # datos demo (admin, tareas, encuesta)
 tests/
-└── api.test.js      # 28 pruebas (jest + supertest, SQLite en memoria)
+└── api.test.js      # 32 pruebas (jest + supertest, SQLite en memoria)
 ```
 
 ## Diseño
@@ -40,6 +40,9 @@ tests/
   por defecto 50). La app y el panel la leen de `GET /api/config`.
 - **Anti doble acreditación**: constraint único en el ledger +
   `max_completions_per_user` por tarea; aprobar dos veces devuelve 409.
+- **Aprobación de cuentas**: el registro no exige verificar el correo; las
+  cuentas nuevas nacen con `approved = 0`. Un admin las aprueba con
+  `PATCH /api/admin/users/:id` (`approved: 1`).
 - **Verificación**: `manual` (un admin aprueba desde el panel) o `auto`
   (encuestas: la respuesta válida acredita de inmediato).
 - **Logros**: se evalúan dentro de la transacción de cada evento (primera
@@ -77,5 +80,5 @@ Referencia completa en [../docs/API.md](../docs/API.md). Resumen:
 ## Tests
 
 ```bash
-npm test   # 28 pruebas (jest + supertest, SQLite en memoria)
+npm test   # 32 pruebas (jest + supertest, SQLite en memoria)
 ```

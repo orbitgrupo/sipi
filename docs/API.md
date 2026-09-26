@@ -53,7 +53,7 @@ Estados de canje: `pending` → `completed` | `rejected` (devuelve puntos vía `
 | GET | `/api/admin/stats` | Usuarios, tareas activas, encuestas, puntos emitidos, USD pagado/pendiente, actividad 30 días, top tareas |
 | GET | `/api/admin/activity` | Actividad reciente de usuarios |
 | GET | `/api/admin/users` | Usuarios con puntos y nivel |
-| PATCH | `/api/admin/users/:id` | Cambiar rol (`role`) o estado (`status`) |
+| PATCH | `/api/admin/users/:id` | Cambiar rol (`role`), estado (`status`) o aprobación (`approved`: 0/1) |
 | GET | `/api/admin/tasks` | Todas las tareas (activas e inactivas) |
 | POST | `/api/admin/tasks` | Crear tarea |
 | PUT | `/api/admin/tasks/:id` | Editar tarea (incluye activar/pausar) |

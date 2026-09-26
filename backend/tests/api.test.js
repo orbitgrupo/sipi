@@ -260,3 +260,36 @@ describe('admin', () => {
     expect(alex.level).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe('aprobación de cuentas', () => {
+  test('el registro crea la cuenta pendiente de aprobación (sin verificar correo)', async () => {
+    const r = await request(app).post('/api/auth/register').send({
+      name: 'Pendiente Prueba', email: 'pendiente@sipi.app', password: 'secreta1',
+    });
+    expect(r.status).toBe(201);
+    expect(r.body.user.approved).toBe(false);
+  });
+  test('login y /me devuelven el estado de aprobación', async () => {
+    const login = await request(app).post('/api/auth/login').send({
+      email: 'pendiente@sipi.app', password: 'secreta1',
+    });
+    expect(login.body.user.approved).toBe(false);
+    const me = await request(app).get('/api/auth/me').set(auth(login.body.token));
+    expect(me.body.user.approved).toBe(false);
+  });
+  test('el admin puede aprobar la cuenta y el usuario lo ve reflejado', async () => {
+    const list = await request(app).get('/api/admin/users').set(auth(adminToken));
+    const p = list.body.users.find((u) => u.email === 'pendiente@sipi.app');
+    expect(p.approved).toBe(false);
+    const patch = await request(app).patch(`/api/admin/users/${p.id}`).set(auth(adminToken)).send({ approved: 1 });
+    expect(patch.status).toBe(200);
+    const login = await request(app).post('/api/auth/login').send({
+      email: 'pendiente@sipi.app', password: 'secreta1',
+    });
+    expect(login.body.user.approved).toBe(true);
+  });
+  test('PATCH rechaza valores inválidos de approved', async () => {
+    const r = await request(app).patch('/api/admin/users/1').set(auth(adminToken)).send({ approved: 'si' });
+    expect(r.status).toBe(400);
+  });
+});

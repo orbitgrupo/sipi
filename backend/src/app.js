@@ -110,10 +110,11 @@ function createApp(db) {
       const emailNorm = String(email).trim().toLowerCase();
       const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(emailNorm);
       if (exists) throw httpError(409, 'EMAIL_TAKEN');
-      const info = db.prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)').run(
+      const info = db.prepare('INSERT INTO users (name, email, password_hash, approved) VALUES (?, ?, ?, 0)').run(
         String(name).trim(), emailNorm, hashPassword(password)
       );
-      const user = db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(info.lastInsertRowid);
+      const row = db.prepare('SELECT id, name, email, role, approved FROM users WHERE id = ?').get(info.lastInsertRowid);
+      const user = { id: row.id, name: row.name, email: row.email, role: row.role, approved: !!row.approved };
       res.status(201).json({ token: signToken(user), user });
     } catch (e) { next(e); }
   });
@@ -125,15 +126,15 @@ function createApp(db) {
       if (!row || row.status !== 'active' || !verifyPassword(password || '', row.password_hash)) {
         throw httpError(401, 'INVALID_CREDENTIALS');
       }
-      const user = { id: row.id, name: row.name, email: row.email, role: row.role };
+      const user = { id: row.id, name: row.name, email: row.email, role: row.role, approved: !!row.approved };
       res.json({ token: signToken(user), user });
     } catch (e) { next(e); }
   });
 
   app.get('/api/auth/me', requireAuth, (req, res) => {
-    const row = db.prepare('SELECT id, name, email, role, created_at FROM users WHERE id = ?').get(req.user.id);
+    const row = db.prepare('SELECT id, name, email, role, approved, created_at FROM users WHERE id = ?').get(req.user.id);
     const points = getBalance(db, req.user.id);
-    res.json({ user: row, balance: { points, usd: toUsd(points), points_per_usd: getPointsPerUsd() } });
+    res.json({ user: { ...row, approved: !!row.approved }, balance: { points, usd: toUsd(points), points_per_usd: getPointsPerUsd() } });
   });
 
   app.put('/api/users/me', requireAuth, (req, res, next) => {
@@ -146,8 +147,8 @@ function createApp(db) {
       const taken = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(emailNorm, req.user.id);
       if (taken) throw httpError(409, 'EMAIL_TAKEN');
       db.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').run(nameTrim, emailNorm, req.user.id);
-      const user = db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(req.user.id);
-      res.json({ user });
+      const user = db.prepare('SELECT id, name, email, role, approved FROM users WHERE id = ?').get(req.user.id);
+      res.json({ user: { ...user, approved: !!user.approved } });
     } catch (e) { next(e); }
   });
 
@@ -381,26 +382,28 @@ function createApp(db) {
   });
 
   app.get('/api/admin/users', requireAuth, requireAdmin, (req, res) => {
-    const users = db.prepare('SELECT id, name, email, role, status, created_at FROM users ORDER BY id DESC').all();
+    const users = db.prepare('SELECT id, name, email, role, status, approved, created_at FROM users ORDER BY id DESC').all();
     res.json({
       users: users.map((u) => {
         const earned = db.prepare("SELECT COALESCE(SUM(points),0) AS s FROM ledger WHERE user_id = ? AND type IN ('EARN','BONUS')").get(u.id).s;
-        return { ...u, points: getBalance(db, u.id), level: levelFor(earned) };
+        return { ...u, approved: !!u.approved, points: getBalance(db, u.id), level: levelFor(earned) };
       }),
     });
   });
 
   app.patch('/api/admin/users/:id', requireAuth, requireAdmin, (req, res, next) => {
     try {
-      const { status, role } = req.body || {};
+      const { status, role, approved } = req.body || {};
       if (status && !['active', 'inactive'].includes(status)) throw httpError(400, 'INVALID_STATUS');
       if (role && !['user', 'admin'].includes(role)) throw httpError(400, 'INVALID_ROLE');
+      if (approved !== undefined && ![0, 1, true, false].includes(approved)) throw httpError(400, 'INVALID_APPROVED');
       if (Number(req.params.id) === req.user.id && (status === 'inactive' || role === 'user')) {
         throw httpError(400, 'CANNOT_DEMOTE_SELF');
       }
       const sets = [], params = [];
       if (status) { sets.push('status = ?'); params.push(status); }
       if (role) { sets.push('role = ?'); params.push(role); }
+      if (approved !== undefined) { sets.push('approved = ?'); params.push(approved ? 1 : 0); }
       if (!sets.length) throw httpError(400, 'NOTHING_TO_UPDATE');
       params.push(req.params.id);
       const info = db.prepare(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`).run(...params);

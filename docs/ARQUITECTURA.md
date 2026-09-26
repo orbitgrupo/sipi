@@ -70,6 +70,10 @@ La app los muestra en `GET /api/achievements`.
   `ADJUSTMENT`. No hay endpoints de UPDATE/DELETE sobre el ledger.
 - **Sin doble acreditación**: constraint único en el ledger + límite
   `max_completions_per_user` por tarea; aprobar dos veces devuelve 409.
+- **Aprobación de cuentas**: el registro no exige verificar el correo; las
+  cuentas nuevas nacen con `approved = 0` y el perfil muestra "Cuenta
+  pendiente de aprobación". Un admin las aprueba desde el panel
+  (`PATCH /api/admin/users/:id` con `approved: 1`).
 - **Conversión configurable**: `points_per_usd` en la tabla `config`,
   editable desde el panel. La app y el panel la leen del servidor.
 
