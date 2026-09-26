@@ -175,14 +175,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Crea tu cuenta',
-                style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    color: SipiColors.text)),
-            const SizedBox(height: 6),
-            const Text('Únete a Sipi y comienza\na ganar recompensas',
-                style: TextStyle(color: SipiColors.muted, fontSize: 15)),
+            Center(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: const [
+                  Text('Crea tu cuenta',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          color: SipiColors.text)),
+                  SizedBox(height: 6),
+                  Text('Únete a Sipi y comienza\na ganar recompensas',
+                      textAlign: TextAlign.center,
+                      style:
+                          TextStyle(color: SipiColors.muted, fontSize: 15)),
+                ],
+              ),
+            ),
             const SizedBox(height: 28),
             TextField(
                 controller: _name,
@@ -276,14 +286,24 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Bienvenido de nuevo',
-                style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    color: SipiColors.text)),
-            const SizedBox(height: 6),
-            const Text('Inicia sesión en tu cuenta',
-                style: TextStyle(color: SipiColors.muted, fontSize: 15)),
+            Center(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: const [
+                  Text('Bienvenido de nuevo',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          color: SipiColors.text)),
+                  SizedBox(height: 6),
+                  Text('Inicia sesión en tu cuenta',
+                      textAlign: TextAlign.center,
+                      style:
+                          TextStyle(color: SipiColors.muted, fontSize: 15)),
+                ],
+              ),
+            ),
             const SizedBox(height: 28),
             TextField(
                 controller: _email,
