@@ -1,5 +1,6 @@
 // Sipi — Tareas: lista con filtros/búsqueda, detalle y pantalla de éxito.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../core/theme.dart';
 import '../core/session.dart';
 import '../core/models.dart';
@@ -19,13 +20,14 @@ String _tabLabel(String t) =>
 
 class TasksScreen extends StatefulWidget {
   final Session session;
-  const TasksScreen({super.key, required this.session});
+  final String initialTab;
+  const TasksScreen({super.key, required this.session, this.initialTab = 'todas'});
   @override
   State<TasksScreen> createState() => _TasksScreenState();
 }
 
 class _TasksScreenState extends State<TasksScreen> {
-  String _tab = 'todas';
+  late String _tab = widget.initialTab;
   String _query = '';
   List<Task> _tasks = [];
   bool _loading = true;
@@ -203,9 +205,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   Widget build(BuildContext context) {
     final t = _task;
     return Scaffold(
-      appBar: AppBar(actions: [
-        IconButton(onPressed: () {}, icon: const Icon(Icons.favorite_border))
-      ]),
+      appBar: AppBar(),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : t == null
@@ -247,25 +247,39 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     if (t.targetUrl.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       const _DetailLabel('Cuenta a seguir'),
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(14)),
-                        child: Row(children: [
-                          const Icon(Icons.person_outline,
-                              color: SipiColors.muted),
-                          const SizedBox(width: 10),
-                          Expanded(
-                              child: Text(t.targetUrl,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600))),
-                          const Text('Ir a la cuenta',
-                              style: TextStyle(
-                                  color: SipiColors.primary,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13)),
-                        ]),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () async {
+                          await Clipboard.setData(
+                              ClipboardData(text: t.targetUrl));
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content:
+                                      Text('Enlace copiado al portapapeles.')),
+                            );
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14)),
+                          child: Row(children: [
+                            const Icon(Icons.person_outline,
+                                color: SipiColors.muted),
+                            const SizedBox(width: 10),
+                            Expanded(
+                                child: Text(t.targetUrl,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600))),
+                            const Text('Copiar enlace',
+                                style: TextStyle(
+                                    color: SipiColors.primary,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13)),
+                          ]),
+                        ),
                       ),
                     ],
                     const SizedBox(height: 16),
@@ -366,17 +380,20 @@ class _StatusBanner extends StatelessWidget {
       {required this.icon, required this.text, required this.color});
   @override
   Widget build(BuildContext context) {
+    // El ámbar puro sobre fondo ámbar claro no se lee bien: usar tono oscuro.
+    final fg =
+        color == SipiColors.warning ? SipiColors.warningDark : color;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(14)),
       child: Row(children: [
-        Icon(icon, color: color),
+        Icon(icon, color: fg),
         const SizedBox(width: 10),
         Expanded(
             child: Text(text,
-                style: TextStyle(color: color, fontWeight: FontWeight.w600))),
+                style: TextStyle(color: fg, fontWeight: FontWeight.w600))),
       ]),
     );
   }

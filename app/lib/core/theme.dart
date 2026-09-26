@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 
 class SipiColors {
   static const primary = Color(0xFF2456E6);
+  static const primaryLight = Color(0xFF2F63F0);
   static const primaryDark = Color(0xFF1A3FB8);
   static const primarySoft = Color(0xFFE8EDFD);
   static const accent = Color(0xFF7C5CFF);
+  static const accentLight = Color(0xFF9D7BFF);
+  static const accentDark = Color(0xFF4A2FD6);
   static const background = Color(0xFFF4F6FB);
   static const card = Colors.white;
   static const text = Color(0xFF1B2340);
@@ -14,9 +17,12 @@ class SipiColors {
   static const success = Color(0xFF22B573);
   static const successSoft = Color(0xFFE2F6EC);
   static const warning = Color(0xFFF5A623);
+  static const warningDark = Color(0xFFB45309);
   static const warningSoft = Color(0xFFFDF1DC);
   static const danger = Color(0xFFE5484D);
   static const dangerSoft = Color(0xFFFBE4E5);
+  static const gold = Color(0xFFFFD54F);
+  static const pink = Color(0xFFE1306C);
 }
 
 class SipiRadii {

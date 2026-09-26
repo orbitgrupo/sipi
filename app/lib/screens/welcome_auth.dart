@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../core/session.dart';
 import '../widgets/common.dart';
+import 'profile.dart';
 
 class WelcomeScreen extends StatelessWidget {
   final Session session;
@@ -12,79 +13,88 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            children: [
-              const Spacer(),
-              // Logo sin fotografía de personas: insignia con gradiente + marca.
-              Container(
-                width: 92,
-                height: 92,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF2F63F0), SipiColors.primaryDark],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    children: [
+                      const Spacer(),
+                      // Logo sin fotografía de personas: insignia con gradiente + marca.
+                      Container(
+                        width: 92,
+                        height: 92,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [SipiColors.primaryLight, SipiColors.primaryDark],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: SipiColors.primary.withValues(alpha: 0.35),
+                              blurRadius: 24,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.auto_awesome,
+                            color: Colors.white, size: 44),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text('Sipi',
+                          style: TextStyle(
+                              fontSize: 44,
+                              fontWeight: FontWeight.w900,
+                              color: SipiColors.text,
+                              letterSpacing: -1)),
+                      const SizedBox(height: 8),
+                      const Text('Tareas de hoy,\nrecompensas para mañana',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 16, color: SipiColors.muted, height: 1.45)),
+                      const Spacer(),
+                      // Ilustración abstracta (sin personas): ondas.
+                      SizedBox(
+                        height: 150,
+                        child: CustomPaint(
+                            painter: _WavesPainter(),
+                            size: const Size(double.infinity, 150)),
+                      ),
+                      const Spacer(),
+                      SipiButton(
+                        label: 'Crear cuenta',
+                        onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => RegisterScreen(session: session))),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(52),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          side: const BorderSide(color: SipiColors.primary),
+                          textStyle: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700),
+                        ),
+                        onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => LoginScreen(session: session))),
+                        child: const Text('Iniciar sesión'),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                   ),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: SipiColors.primary.withValues(alpha: 0.35),
-                      blurRadius: 24,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
                 ),
-                child: const Icon(Icons.auto_awesome,
-                    color: Colors.white, size: 44),
               ),
-              const SizedBox(height: 18),
-              const Text('Sipi',
-                  style: TextStyle(
-                      fontSize: 44,
-                      fontWeight: FontWeight.w900,
-                      color: SipiColors.text,
-                      letterSpacing: -1)),
-              const SizedBox(height: 8),
-              const Text('Tareas de hoy,\nrecompensas para mañana',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 16, color: SipiColors.muted, height: 1.45)),
-              const Spacer(),
-              // Ilustración abstracta (sin personas): ondas.
-              SizedBox(
-                height: 150,
-                child: CustomPaint(
-                    painter: _WavesPainter(),
-                    size: const Size(double.infinity, 150)),
-              ),
-              const Spacer(),
-              SipiButton(
-                label: 'Crear cuenta',
-                onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => RegisterScreen(session: session))),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  side: const BorderSide(color: SipiColors.primary),
-                  textStyle: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w700),
-                ),
-                onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => LoginScreen(session: session))),
-                child: const Text('Iniciar sesión'),
-              ),
-              const SizedBox(height: 8),
-            ],
+            ),
           ),
         ),
       ),
@@ -144,7 +154,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       await widget.session
           .register(_name.text.trim(), _email.text.trim(), _pass.text);
-      if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+      if (mounted) {
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ThanksScreen()));
+      }
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {
@@ -200,23 +214,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 24),
             SipiButton(
                 label: 'Crear cuenta', loading: _loading, onPressed: _submit),
-            const SizedBox(height: 20),
-            Row(children: const [
-              Expanded(child: Divider()),
-              Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text('o continúa con',
-                      style: TextStyle(color: SipiColors.muted, fontSize: 13))),
-              Expanded(child: Divider()),
-            ]),
-            const SizedBox(height: 16),
-            const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              _SocialBtn(label: 'G'),
-              SizedBox(width: 16),
-              _SocialBtn(label: ''),
-              SizedBox(width: 16),
-              _SocialBtn(label: 'f'),
-            ]),
             const SizedBox(height: 24),
             Center(
               child: GestureDetector(
@@ -241,28 +238,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SocialBtn extends StatelessWidget {
-  final String label;
-  const _SocialBtn({required this.label});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 52,
-      height: 52,
-      decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(16)),
-      alignment: Alignment.center,
-      child: label == ''
-          ? const Icon(Icons.apple, size: 26)
-          : Text(label,
-              style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: SipiColors.text)),
     );
   }
 }
@@ -332,13 +307,20 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            const Align(
+            Align(
               alignment: Alignment.centerRight,
-              child: Text('Olvidé mi contraseña',
-                  style: TextStyle(
-                      color: SipiColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13)),
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            SupportScreen(session: widget.session))),
+                child: const Text('Olvidé mi contraseña',
+                    style: TextStyle(
+                        color: SipiColors.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13)),
+              ),
             ),
             const SizedBox(height: 20),
             SipiButton(

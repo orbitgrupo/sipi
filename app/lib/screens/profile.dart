@@ -1,6 +1,7 @@
 // Sipi — Perfil, Notificaciones, Soporte, Configuración, Más y pantalla final
 // (pantallas 12-17 del mockup).
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../core/theme.dart';
 import '../core/session.dart';
 import '../core/models.dart';
@@ -66,10 +67,6 @@ class ProfileScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                       builder: (_) => EditProfileScreen(session: session)))),
-          _MenuItem(
-              icon: Icons.credit_card_outlined,
-              label: 'Métodos de pago',
-              onTap: () {}),
           _MenuItem(
               icon: Icons.emoji_events_outlined,
               label: 'Mis logros',
@@ -224,50 +221,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: Column(
           children: [
             const SizedBox(height: 8),
-            Stack(
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF2F63F0), SipiColors.primaryDark],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: SipiColors.primary.withValues(alpha: 0.3),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                      (u?.name ?? '?').substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                          fontSize: 38,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white)),
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [SipiColors.primaryLight, SipiColors.primaryDark],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: SipiColors.border, width: 2),
-                    ),
-                    child: const Icon(Icons.camera_alt_outlined,
-                        size: 16, color: SipiColors.primary),
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: SipiColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
                   ),
-                ),
-              ],
+                ],
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                  (u?.name ?? '?').substring(0, 1).toUpperCase(),
+                  style: const TextStyle(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white)),
             ),
             const SizedBox(height: 24),
             const Align(
@@ -574,7 +552,10 @@ class _PointsHistoryScreenState extends State<PointsHistoryScreen> {
                             m.note.isEmpty ? _typeLabel(m.type) : m.note,
                             style: const TextStyle(
                                 fontWeight: FontWeight.w600, fontSize: 14)),
-                        subtitle: Text(_typeLabel(m.type),
+                        subtitle: Text(
+                            m.note.isEmpty
+                                ? _shortDate(m.createdAt)
+                                : _typeLabel(m.type),
                             style: const TextStyle(
                                 color: SipiColors.muted, fontSize: 12)),
                         trailing: Text('${positive ? '+' : ''}${m.points}',
@@ -599,6 +580,9 @@ class _PointsHistoryScreenState extends State<PointsHistoryScreen> {
         'ADJUSTMENT': 'Ajuste',
       }[t] ??
       t;
+
+  String _shortDate(String iso) =>
+      iso.length >= 10 ? iso.substring(0, 10) : iso;
 }
 
 // ---------------- Notificaciones ----------------
@@ -698,6 +682,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 class SupportScreen extends StatelessWidget {
   final Session session;
   const SupportScreen({super.key, required this.session});
+
+  void _faq(BuildContext context, String topic, String answer) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(topic),
+        content: Text(answer, style: const TextStyle(height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -729,17 +730,23 @@ class SupportScreen extends StatelessWidget {
           _MenuItem(
               icon: Icons.task_outlined,
               label: 'Problemas con tareas',
-              onTap: () {}),
+              onTap: () => _faq(context, 'Problemas con tareas',
+                  'Si una tarea no se acredita, verifica que hayas completado todos los pasos y enviado la verificación. Las tareas manuales se revisan en un máximo de 48 horas.')),
           _MenuItem(
               icon: Icons.payments_outlined,
               label: 'Pagos y recompensas',
-              onTap: () {}),
+              onTap: () => _faq(context, 'Pagos y recompensas',
+                  'Puedes canjear tus puntos desde la pestaña Canjear cuando alcances el mínimo. Los pagos se procesan en 1 a 3 días hábiles.')),
           _MenuItem(
-              icon: Icons.person_outline, label: 'Mi cuenta', onTap: () {}),
+              icon: Icons.person_outline,
+              label: 'Mi cuenta',
+              onTap: () => _faq(context, 'Mi cuenta',
+                  'Puedes actualizar tu nombre, correo y contraseña desde Perfil > Editar perfil. Si no puedes entrar a tu cuenta, escríbenos con el botón de abajo.')),
           _MenuItem(
               icon: Icons.report_outlined,
               label: 'Reportar un problema',
-              onTap: () {}),
+              onTap: () => _faq(context, 'Reportar un problema',
+                  'Cuéntanos qué pasó con el botón "Enviar mensaje" e incluye capturas si es posible. Te responderemos lo más pronto posible.')),
           const SizedBox(height: 16),
           SipiButton(
               label: 'Enviar mensaje',
@@ -758,34 +765,72 @@ class SupportScreen extends StatelessWidget {
 class SettingsScreen extends StatelessWidget {
   final Session session;
   const SettingsScreen({super.key, required this.session});
+
+  void _soon(BuildContext context, String label) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$label estará disponible próximamente.')),
+    );
+  }
+
+  void _about(BuildContext context) {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Sipi',
+      applicationVersion: '1.0.0',
+      applicationLegalese:
+          'Gana puntos completando tareas y canjéalos por recompensas.',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Configuración')),
       body: ListView(
         padding: const EdgeInsets.all(20),
-        children: const [
+        children: [
           _SettingsGroup(title: 'Cuenta', items: [
             _SettingsItem(
-                icon: Icons.notifications_outlined, label: 'Notificaciones'),
+                icon: Icons.notifications_outlined,
+                label: 'Notificaciones',
+                onTap: () => _soon(context, 'Las notificaciones')),
             _SettingsItem(
-                icon: Icons.privacy_tip_outlined, label: 'Privacidad'),
-            _SettingsItem(icon: Icons.security_outlined, label: 'Seguridad'),
+                icon: Icons.privacy_tip_outlined,
+                label: 'Privacidad',
+                onTap: () => _soon(context, 'La configuración de privacidad')),
+            _SettingsItem(
+                icon: Icons.security_outlined,
+                label: 'Seguridad',
+                onTap: () => _soon(context, 'La configuración de seguridad')),
           ]),
           _SettingsGroup(title: 'Preferencias', items: [
-            _SettingsItem(icon: Icons.language_outlined, label: 'Idioma'),
             _SettingsItem(
-                icon: Icons.palette_outlined, label: 'Tema', value: 'Claro'),
+                icon: Icons.language_outlined,
+                label: 'Idioma',
+                onTap: () => _soon(context, 'El cambio de idioma')),
             _SettingsItem(
-                icon: Icons.storage_outlined, label: 'Procesamiento de datos'),
+                icon: Icons.palette_outlined,
+                label: 'Tema',
+                value: 'Claro',
+                onTap: () => _soon(context, 'El cambio de tema')),
+            _SettingsItem(
+                icon: Icons.storage_outlined,
+                label: 'Procesamiento de datos',
+                onTap: () => _soon(context, 'El procesamiento de datos')),
           ]),
           _SettingsGroup(title: 'Información', items: [
             _SettingsItem(
                 icon: Icons.description_outlined,
-                label: 'Términos y condiciones'),
+                label: 'Términos y condiciones',
+                onTap: () => _soon(context, 'Los términos y condiciones')),
             _SettingsItem(
-                icon: Icons.policy_outlined, label: 'Política de privacidad'),
-            _SettingsItem(icon: Icons.info_outline, label: 'Acerca de Sipi'),
+                icon: Icons.policy_outlined,
+                label: 'Política de privacidad',
+                onTap: () => _soon(context, 'La política de privacidad')),
+            _SettingsItem(
+                icon: Icons.info_outline,
+                label: 'Acerca de Sipi',
+                onTap: () => _about(context)),
           ]),
         ],
       ),
@@ -818,7 +863,9 @@ class _SettingsItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final String? value;
-  const _SettingsItem({required this.icon, required this.label, this.value});
+  final VoidCallback? onTap;
+  const _SettingsItem(
+      {required this.icon, required this.label, this.value, this.onTap});
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -834,7 +881,7 @@ class _SettingsItem extends StatelessWidget {
                 style: const TextStyle(color: SipiColors.muted, fontSize: 13)),
           const Icon(Icons.chevron_right, color: SipiColors.muted),
         ]),
-        onTap: () {},
+        onTap: onTap,
       ),
     );
   }
@@ -844,6 +891,24 @@ class _SettingsItem extends StatelessWidget {
 class MoreScreen extends StatelessWidget {
   final Session session;
   const MoreScreen({super.key, required this.session});
+
+  void _soon(BuildContext context, String label) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$label estará disponible próximamente.')),
+    );
+  }
+
+  Future<void> _invite(BuildContext context) async {
+    await Clipboard.setData(const ClipboardData(
+        text: '¡Únete a Sipi! Completa tareas y gana recompensas.'));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('¡Texto copiado! Compártelo con tus amigos.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -853,20 +918,23 @@ class MoreScreen extends StatelessWidget {
         children: [
           _MenuItem(
               icon: Icons.group_add_outlined,
-              label: 'Invitar amigos\nGana 50 puntos por cada amigo',
-              onTap: () {}),
+              label: 'Invitar amigos\nComparte Sipi con tus amigos',
+              onTap: () => _invite(context)),
           _MenuItem(
               icon: Icons.help_outline,
               label: 'Centro de ayuda\nPreguntas frecuentes',
-              onTap: () {}),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => SupportScreen(session: session)))),
           _MenuItem(
               icon: Icons.article_outlined,
               label: 'Blog\nNovedades y consejos',
-              onTap: () {}),
+              onTap: () => _soon(context, 'El blog')),
           _MenuItem(
               icon: Icons.star_outline,
               label: 'Calificar la app\nNos ayuda mucho',
-              onTap: () {}),
+              onTap: () => _soon(context, 'La calificación de la app')),
           _MenuItem(
               icon: Icons.logout_outlined,
               label: 'Cerrar sesión',
@@ -898,7 +966,7 @@ class ThanksScreen extends StatelessWidget {
                 height: 130,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                      colors: [Color(0xFFFFD54F), Color(0xFFF5A623)],
+                      colors: [SipiColors.gold, SipiColors.warning],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight),
                   borderRadius: BorderRadius.circular(32),
@@ -920,7 +988,8 @@ class ThanksScreen extends StatelessWidget {
               const Spacer(),
               SipiButton(
                   label: 'Seguir explorando',
-                  onPressed: () => Navigator.pop(context)),
+                  onPressed: () =>
+                      Navigator.popUntil(context, (r) => r.isFirst)),
               const SizedBox(height: 8),
             ],
           ),

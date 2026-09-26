@@ -18,14 +18,35 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _index = 0;
+  String _tasksTab = 'todas';
+
+  void _goToTasksTab(String tab) {
+    setState(() {
+      _tasksTab = tab;
+      _index = 1;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final pages = [
       HomeScreen(
           session: widget.session,
-          onSeeAllTasks: () => setState(() => _index = 1)),
-      TasksScreen(session: widget.session),
+          onSeeAllTasks: () => _goToTasksTab('todas'),
+          onCategoryTap: (cat) {
+            if (cat == 'mas') {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => MoreScreen(session: widget.session)));
+            } else {
+              _goToTasksTab(cat);
+            }
+          }),
+      TasksScreen(
+          key: ValueKey(_tasksTab),
+          session: widget.session,
+          initialTab: _tasksTab),
       AchievementsScreen(session: widget.session),
       RedeemScreen(session: widget.session),
       ProfileScreen(session: widget.session),
@@ -65,8 +86,12 @@ class _MainShellState extends State<MainShell> {
 class HomeScreen extends StatefulWidget {
   final Session session;
   final VoidCallback onSeeAllTasks;
+  final ValueChanged<String> onCategoryTap;
   const HomeScreen(
-      {super.key, required this.session, required this.onSeeAllTasks});
+      {super.key,
+      required this.session,
+      required this.onSeeAllTasks,
+      required this.onCategoryTap});
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -111,20 +136,27 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(20),
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Hola,',
-                            style: TextStyle(
-                                color: SipiColors.muted, fontSize: 14)),
-                        Text(s.firstName.isEmpty ? '¡Bienvenido!' : s.firstName,
-                            style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                                color: SipiColors.text)),
-                      ]),
+                  Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Hola,',
+                              style: TextStyle(
+                                  color: SipiColors.muted, fontSize: 14)),
+                          Text(
+                              s.firstName.isEmpty
+                                  ? '¡Bienvenido!'
+                                  : s.firstName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                  color: SipiColors.text)),
+                        ]),
+                  ),
+                  const SizedBox(width: 10),
                   Row(children: [
                     Container(
                       decoration: BoxDecoration(
@@ -152,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [
-                            Color(0xFF2F63F0),
+                            SipiColors.primaryLight,
                             SipiColors.primaryDark
                           ],
                           begin: Alignment.topLeft,
@@ -175,34 +207,48 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 18),
-              if (bal != null) BalanceCard(points: bal.points, usd: bal.usd),
+              if (bal != null)
+                BalanceCard(
+                    points: bal.points,
+                    usd: bal.usd,
+                    pointsPerUsd: bal.pointsPerUsd),
               const SizedBox(height: 22),
               const SectionHeader(title: 'Categorías'),
               SizedBox(
                 height: 92,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  children: const [
+                  children: [
                     _CategoryTile(
                         icon: Icons.task_alt_outlined,
                         label: 'Tareas',
-                        color: SipiColors.primary),
+                        color: SipiColors.primary,
+                        tab: 'todas',
+                        onTap: widget.onCategoryTap),
                     _CategoryTile(
                         icon: Icons.poll_outlined,
                         label: 'Encuestas',
-                        color: Color(0xFFF5A623)),
+                        color: SipiColors.warning,
+                        tab: 'encuestas',
+                        onTap: widget.onCategoryTap),
                     _CategoryTile(
                         icon: Icons.share_outlined,
                         label: 'Redes',
-                        color: Color(0xFFE1306C)),
+                        color: SipiColors.pink,
+                        tab: 'social',
+                        onTap: widget.onCategoryTap),
                     _CategoryTile(
                         icon: Icons.local_offer_outlined,
                         label: 'Ofertas',
-                        color: Color(0xFF22B573)),
+                        color: SipiColors.success,
+                        tab: 'promociones',
+                        onTap: widget.onCategoryTap),
                     _CategoryTile(
                         icon: Icons.grid_view_outlined,
                         label: 'Más',
-                        color: SipiColors.muted),
+                        color: SipiColors.muted,
+                        tab: 'mas',
+                        onTap: widget.onCategoryTap),
                   ],
                 ),
               ),
@@ -241,38 +287,48 @@ class _CategoryTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+  final String tab;
+  final ValueChanged<String> onTap;
   const _CategoryTile(
-      {required this.icon, required this.label, required this.color});
+      {required this.icon,
+      required this.label,
+      required this.color,
+      required this.tab,
+      required this.onTap});
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 80,
       margin: const EdgeInsets.only(right: 10),
-      child: Column(children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  color.withValues(alpha: 0.16),
-                  color.withValues(alpha: 0.07)
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(SipiRadii.lg),
-              border: Border.all(
-                  color: color.withValues(alpha: 0.18), width: 1)),
-          child: Icon(icon, color: color, size: 26),
-        ),
-        const SizedBox(height: 7),
-        Text(label,
-            style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: SipiColors.text)),
-      ]),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(SipiRadii.lg),
+        onTap: () => onTap(tab),
+        child: Column(children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    color.withValues(alpha: 0.16),
+                    color.withValues(alpha: 0.07)
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(SipiRadii.lg),
+                border: Border.all(
+                    color: color.withValues(alpha: 0.18), width: 1)),
+            child: Icon(icon, color: color, size: 26),
+          ),
+          const SizedBox(height: 7),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: SipiColors.text)),
+        ]),
+      ),
     );
   }
 }

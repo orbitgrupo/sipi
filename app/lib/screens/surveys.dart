@@ -1,4 +1,4 @@
-// Sipi — Encuestas: lista y pantalla para responder (única, múltiple,
+// Sipi — Encuestas: pantalla para responder (única, múltiple,
 // sí/no, escala y texto). Pantalla 8 del mockup.
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
@@ -6,74 +6,6 @@ import '../core/session.dart';
 import '../core/models.dart';
 import '../widgets/common.dart';
 import 'tasks.dart' show TaskSuccessScreen;
-
-class SurveysScreen extends StatefulWidget {
-  final Session session;
-  const SurveysScreen({super.key, required this.session});
-  @override
-  State<SurveysScreen> createState() => _SurveysScreenState();
-}
-
-class _SurveysScreenState extends State<SurveysScreen> {
-  List<Task> _surveys = [];
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      final all = await widget.session.api.tasks();
-      if (mounted) {
-        setState(() {
-          _surveys = all
-              .where(
-                  (t) => t.category == 'encuestas' || t.category == 'opinion')
-              .toList();
-          _loading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Encuestas')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _surveys.isEmpty
-              ? const EmptyState(
-                  icon: Icons.poll_outlined,
-                  message: 'No hay encuestas disponibles.')
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _surveys.length,
-                    itemBuilder: (_, i) => TaskCard(
-                      task: _surveys[i],
-                      onTap: () async {
-                        await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => SurveyAnswerScreen(
-                                    session: widget.session,
-                                    taskId: _surveys[i].id,
-                                    title: _surveys[i].title)));
-                        _load();
-                      },
-                    ),
-                  ),
-                ),
-    );
-  }
-}
 
 class SurveyAnswerScreen extends StatefulWidget {
   final Session session;

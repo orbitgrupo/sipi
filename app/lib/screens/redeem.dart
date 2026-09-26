@@ -47,7 +47,8 @@ class _RedeemScreenState extends State<RedeemScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          BalanceCard(points: points, usd: bal?.usd ?? 0),
+          BalanceCard(
+              points: points, usd: bal?.usd ?? 0, pointsPerUsd: ppu),
           const SizedBox(height: 24),
           const Text('Elige un monto',
               style: TextStyle(
@@ -80,7 +81,7 @@ class _RedeemScreenState extends State<RedeemScreen> {
                       gradient: selected
                           ? const LinearGradient(
                               colors: [
-                                Color(0xFF2F63F0),
+                                SipiColors.primaryLight,
                                 SipiColors.primaryDark
                               ],
                               begin: Alignment.topLeft,
@@ -161,10 +162,23 @@ class _RedeemScreenState extends State<RedeemScreen> {
                   Icon(Icons.info_outline, color: SipiColors.primary, size: 20),
                   SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      'Información\nEl tipo de cambio se calcula con la configuración actual. Tu recompensa se enviará al método de pago registrado. El tiempo de procesamiento es de 1 a 3 días hábiles.',
-                      style: TextStyle(
-                          color: SipiColors.muted, fontSize: 12, height: 1.5),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Información',
+                          style: TextStyle(
+                              color: SipiColors.text,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'El tipo de cambio se calcula con la configuración actual. Tu recompensa se enviará al método de pago registrado. El tiempo de procesamiento es de 1 a 3 días hábiles.',
+                          style: TextStyle(
+                              color: SipiColors.muted, fontSize: 12, height: 1.5),
+                        ),
+                      ],
                     ),
                   ),
                 ]),
@@ -328,7 +342,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                         ? SipiColors.success
                                         : rejected
                                             ? SipiColors.danger
-                                            : SipiColors.warning,
+                                            : SipiColors.warningDark,
                                   ),
                                 ),
                               ),

@@ -65,13 +65,18 @@ class SectionHeader extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                   color: SipiColors.text)),
           if (action != null)
-            GestureDetector(
-              onTap: onAction,
-              child: Text(action!,
-                  style: const TextStyle(
-                      color: SipiColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13)),
+            TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(
+                foregroundColor: SipiColors.primary,
+                textStyle: const TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 13),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: const Size(64, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(action!),
             ),
         ],
       ),
@@ -98,17 +103,17 @@ IconData taskIcon(String category) {
 Color taskIconBg(String category) {
   switch (category) {
     case 'social':
-      return const Color(0xFFE1306C);
+      return SipiColors.pink;
     case 'encuestas':
-      return const Color(0xFFF5A623);
+      return SipiColors.warning;
     case 'opinion':
-      return const Color(0xFFE5484D);
+      return SipiColors.danger;
     case 'productos':
-      return const Color(0xFF2456E6);
+      return SipiColors.primary;
     case 'promociones':
-      return const Color(0xFF22B573);
+      return SipiColors.success;
     default:
-      return const Color(0xFF8A93B2);
+      return SipiColors.muted;
   }
 }
 
@@ -210,14 +215,19 @@ class TaskCard extends StatelessWidget {
 class BalanceCard extends StatelessWidget {
   final int points;
   final double usd;
-  const BalanceCard({super.key, required this.points, required this.usd});
+  final int pointsPerUsd;
+  const BalanceCard(
+      {super.key,
+      required this.points,
+      required this.usd,
+      required this.pointsPerUsd});
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF2F63F0), SipiColors.primaryDark],
+          colors: [SipiColors.primaryLight, SipiColors.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -289,7 +299,7 @@ class BalanceCard extends StatelessWidget {
                               letterSpacing: -0.5)),
                       const SizedBox(height: 6),
                       Text(
-                          'Te faltan ${100 - (points % 100)} pts para canjear \$1.00',
+                          'Te faltan ${pointsPerUsd - (points % pointsPerUsd)} pts para canjear \$1.00',
                           style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.75),
                               fontSize: 11.5)),

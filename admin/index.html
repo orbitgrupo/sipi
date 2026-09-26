@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sipi · Panel administrativo web — Control total de tu plataforma</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233B82F6'/%3E%3Cstop offset='1' stop-color='%231D4ED8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='44' font-family='Arial,sans-serif' font-size='36' font-weight='900' fill='white' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -103,8 +104,6 @@
   .ic.amber{background:var(--grad-amber);box-shadow:0 10px 20px -8px rgba(249,115,22,.6)}
   .stat .v{font-size:25px;font-weight:900;line-height:1.15;letter-spacing:-.02em}
   .stat .l{color:var(--muted);font-size:12px;margin-top:3px;font-weight:700}
-  .stat .delta{font-size:11.5px;font-weight:800;margin-top:8px;color:#15803D;background:#DFF5E5;
-    border-radius:8px;padding:3px 9px;display:inline-block}
 
   .grid-2{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:20px}
   @media(max-width:1000px){.grid-2{grid-template-columns:1fr}}
@@ -415,6 +414,12 @@ function areaChart(days, key, color){
 function donutChart(entries){
   const total = entries.reduce((a,e) => a+e.v, 0) || 1;
   const R=62, C=2*Math.PI*R; let off=0;
+  // Porcentajes con resto mayor: siempre suman 100
+  const raw = entries.map(e => e.v/total*100);
+  const base = raw.map(Math.floor);
+  let rest = 100 - base.reduce((a,b) => a+b, 0);
+  const order = raw.map((r,i) => i).sort((a,b) => (raw[b]-base[b]) - (raw[a]-base[a]));
+  for (let i = 0; i < rest && i < order.length; i++) base[order[i]]++;
   const defs = entries.map((e,i) => `<linearGradient id="dg${i}" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="${e.c1}"/><stop offset="1" stop-color="${e.c2}"/></linearGradient>`).join('');
   const segs = entries.map((e,i) => {
@@ -430,8 +435,8 @@ function donutChart(entries){
       <text x="80" y="78" text-anchor="middle" font-size="25" font-weight="900" fill="#101C30" font-family="Nunito,sans-serif">${total}</text>
       <text x="80" y="97" text-anchor="middle" font-size="11" font-weight="700" fill="#9AA3B5" font-family="Nunito,sans-serif">tareas</text>
     </svg>
-    <div class="donut-legend">${entries.map(e =>
-      `<div class="dl-row"><i style="background:linear-gradient(135deg,${e.c1},${e.c2})"></i><span>${h(e.l)}</span><b>${Math.round(e.v/total*100)}%</b></div>`).join('')}
+    <div class="donut-legend">${entries.map((e,i) =>
+      `<div class="dl-row"><i style="background:linear-gradient(135deg,${e.c1},${e.c2})"></i><span>${h(e.l)}</span><b>${base[i]}%</b></div>`).join('')}
     </div></div>`;
 }
 function bars(entries, color){
@@ -452,9 +457,9 @@ async function vPanel(){
       req('GET','/api/admin/stats'), req('GET','/api/admin/activity'), req('GET','/api/admin/tasks'),
     ]);
     const activeTasks = tk.tasks.filter(t => t.active);
-    const stat = (ic, cls, val, label, delta) => `
+    const stat = (ic, cls, val, label) => `
       <div class="stat"><div class="ic ${cls}">${ic}</div>
-        <div><div class="v">${val}</div><div class="l">${label}</div><div class="delta">${delta}</div></div></div>`;
+        <div><div class="v">${val}</div><div class="l">${label}</div></div></div>`;
     const catDef = {social:['Redes sociales','#60A5FA','#1D4ED8'], encuestas:['Encuestas','#A78BFA','#6D28D9'], promociones:['Ofertas','#FBBF24','#F97316']};
     const agg = {};
     activeTasks.forEach(t => { const k = catDef[t.category] ? t.category : 'otros'; agg[k] = (agg[k]||0)+1; });
@@ -467,10 +472,10 @@ async function vPanel(){
       ${pageHead('Dashboard', s.pending_completions
         ? `<button class="btn primary" onclick="go('tareas');taskTab='rev';setTimeout(drawTasks,60)">${s.pending_completions} por revisar</button>` : '')}
       <div class="stats">
-        ${stat(ICONS.usuarios,'blue',fmtInt(s.users),'Usuarios totales','+12%')}
-        ${stat(ICONS.tareas,'green',fmtInt(activeTasks.length),'Tareas activas','+8%')}
-        ${stat(ICONS.encuestas,'purple',fmtInt(s.surveys ?? tk.tasks.filter(t=>t.verification==='survey'&&t.active).length),'Encuestas activas','+5%')}
-        ${stat(ICONS.pagos,'blue',fmtUsd(s.paid_out_usd),'Pagos realizados','+16%')}
+        ${stat(ICONS.usuarios,'blue',fmtInt(s.users),'Usuarios totales')}
+        ${stat(ICONS.tareas,'green',fmtInt(activeTasks.length),'Tareas activas')}
+        ${stat(ICONS.encuestas,'purple',fmtInt(s.surveys ?? tk.tasks.filter(t=>t.verification==='survey'&&t.active).length),'Encuestas activas')}
+        ${stat(ICONS.pagos,'blue',fmtUsd(s.paid_out_usd),'Pagos realizados')}
       </div>
       <div class="grid-2">
         <div class="panel"><h3>Actividad de usuarios</h3><div class="sub">Últimos 30 días</div>
@@ -823,7 +828,7 @@ function drawPays(){
     <td>${r.status==='pending' ? `<div class="row-actions">
         <button class="btn ok sm" onclick="payAction(${r.id},'complete')">Marcar pagado</button>
         <button class="btn bad sm" onclick="payAction(${r.id},'reject')">Rechazar</button></div>` : '<span class="cell-sub">—</span>'}</td>
-  </tr>`).join('') : `<tr><td colspan="5"><div class="empty">Sin canjes.</div></td></tr>`;
+  </tr>`).join('') : `<tr><td colspan="5"><div class="empty">${ICONS.pagos}<br>Sin canjes.</div></td></tr>`;
 }
 async function payAction(id, action){
   const msg = action==='complete' ? '¿Confirmar que este pago fue enviado?' : '¿Rechazar el canje? Los puntos se devolverán al usuario.';

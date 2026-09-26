@@ -85,8 +85,8 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                                 colors: [
-                                  Color(0xFF9D7BFF),
-                                  Color(0xFF4A2FD6)
+                                  SipiColors.accentLight,
+                                  SipiColors.accentDark
                                 ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight),
@@ -94,7 +94,7 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                                 BorderRadius.circular(28),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF7C5CFF)
+                                color: SipiColors.accent
                                     .withValues(alpha: 0.35),
                                 blurRadius: 18,
                                 offset: const Offset(0, 8),
@@ -116,13 +116,13 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF7C5CFF)
+                            color: SipiColors.accent
                                 .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(_levelName(level),
                               style: const TextStyle(
-                                  color: Color(0xFF4A2FD6),
+                                  color: SipiColors.accentDark,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 13)),
                         ),
@@ -133,7 +133,7 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                               value: progress,
                               minHeight: 8,
                               backgroundColor: SipiColors.border,
-                              color: const Color(0xFF7C5CFF)),
+                              color: SipiColors.accent),
                         ),
                         const SizedBox(height: 8),
                         Text('${earned % 1000} / 1,000 pts',
