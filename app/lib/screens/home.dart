@@ -8,6 +8,7 @@ import 'tasks.dart';
 import 'redeem.dart';
 import 'achievements.dart';
 import 'profile.dart';
+import 'welcome_auth.dart' show RegisterScreen;
 
 class MainShell extends StatefulWidget {
   final Session session;
@@ -167,11 +168,24 @@ class _HomeScreenState extends State<HomeScreen> {
                             Border.all(color: SipiColors.border),
                       ),
                       child: IconButton(
-                        onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) =>
-                                    NotificationsScreen(session: s))),
+                        onPressed: () async {
+                          if (!s.canInteract) {
+                            if (await ensureAccount(context, s) &&
+                                context.mounted) {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          RegisterScreen(session: s)));
+                            }
+                            return;
+                          }
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      NotificationsScreen(session: s)));
+                        },
                         icon: const Icon(Icons.notifications_outlined,
                             size: 20),
                         color: SipiColors.text,

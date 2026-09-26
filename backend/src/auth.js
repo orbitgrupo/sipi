@@ -42,4 +42,22 @@ function makeRequireAdmin(db) {
   };
 }
 
-module.exports = { hashPassword, verifyPassword, signToken, requireAuth, makeRequireAdmin };
+// Auth opcional: si hay token válido adjunta req.user; si no, sigue con
+// req.user = null (para que invitados puedan ver contenido público).
+function maybeAuth(req, res, next) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+  try {
+    req.user = jwt.verify(token, JWT_SECRET);
+    next();
+  } catch {
+    req.user = null;
+    next();
+  }
+}
+
+module.exports = { hashPassword, verifyPassword, signToken, requireAuth, maybeAuth, makeRequireAdmin };

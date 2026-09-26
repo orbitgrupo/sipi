@@ -4,6 +4,7 @@ import '../core/theme.dart';
 import '../core/session.dart';
 import '../core/models.dart';
 import '../widgets/common.dart';
+import 'welcome_auth.dart' show RegisterScreen;
 
 const _levelNames = {
   1: 'Novato',
@@ -50,6 +51,17 @@ class _AchievementsScreenState extends State<AchievementsScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.session.isGuest) {
+      return GuestGateCard(
+        title: 'Mis logros',
+        subtitle:
+            'Crea una cuenta gratis para subir de nivel y ganar insignias.',
+        onCreateAccount: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => RegisterScreen(session: widget.session))),
+      );
+    }
     final bal = widget.session.balance;
     final level = bal?.level ?? 1;
     final earned = bal?.earnedPoints ?? 0;

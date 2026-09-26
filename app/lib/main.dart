@@ -39,7 +39,7 @@ class _SipiAppState extends State<SipiApp> {
       title: 'Sipi',
       debugShowCheckedModeBanner: false,
       theme: sipiTheme(),
-      home: _session.loggedIn
+      home: (_session.loggedIn || _session.isGuest)
           ? MainShell(session: _session)
           : WelcomeScreen(session: _session),
     );

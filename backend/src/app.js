@@ -3,7 +3,7 @@
 // cantidades de puntos. El saldo se deriva del ledger.
 const express = require('express');
 const { transaction } = require('./db');
-const { hashPassword, verifyPassword, signToken, requireAuth, makeRequireAdmin } = require('./auth');
+const { hashPassword, verifyPassword, signToken, requireAuth, maybeAuth, makeRequireAdmin } = require('./auth');
 const { getBalance, addEntry, getMovements, httpError } = require('./ledger');
 const { checkAndAward, metricValue } = require('./achievements');
 
@@ -195,24 +195,32 @@ function createApp(db) {
   });
 
   // ---------------- Tareas ----------------
-  app.get('/api/tasks', requireAuth, (req, res) => {
+  // Público (con o sin sesión): los invitados pueden explorar tareas.
+  app.get('/api/tasks', maybeAuth, (req, res) => {
     const { category, q } = req.query;
-    let sql = `SELECT t.*, c.status AS my_status FROM tasks t
-               LEFT JOIN task_completions c ON c.task_id = t.id AND c.user_id = ? AND c.status IN ('pending','approved')
-               WHERE t.active = 1`;
-    const params = [req.user.id];
+    let sql, params;
+    if (req.user) {
+      sql = `SELECT t.*, c.status AS my_status FROM tasks t
+             LEFT JOIN task_completions c ON c.task_id = t.id AND c.user_id = ? AND c.status IN ('pending','approved')
+             WHERE t.active = 1`;
+      params = [req.user.id];
+    } else {
+      sql = `SELECT t.*, NULL AS my_status FROM tasks t WHERE t.active = 1`;
+      params = [];
+    }
     if (category && CATEGORIES.includes(category)) { sql += ' AND t.category = ?'; params.push(category); }
     if (q) { sql += ' AND (t.title LIKE ? OR t.description LIKE ?)'; params.push(`%${q}%`, `%${q}%`); }
     sql += ' ORDER BY t.id DESC';
     res.json({ tasks: db.prepare(sql).all(...params) });
   });
 
-  app.get('/api/tasks/:id', requireAuth, (req, res, next) => {
+  app.get('/api/tasks/:id', maybeAuth, (req, res, next) => {
     try {
       const t = db.prepare('SELECT * FROM tasks WHERE id = ? AND active = 1').get(req.params.id);
       if (!t) throw httpError(404, 'TASK_NOT_FOUND');
-      const completions = db.prepare('SELECT id, status, submitted_at FROM task_completions WHERE task_id = ? AND user_id = ? ORDER BY id DESC')
-        .all(t.id, req.user.id);
+      const completions = req.user
+        ? db.prepare('SELECT id, status, submitted_at FROM task_completions WHERE task_id = ? AND user_id = ? ORDER BY id DESC').all(t.id, req.user.id)
+        : [];
       res.json({ task: t, my_completions: completions });
     } catch (e) { next(e); }
   });
@@ -240,12 +248,13 @@ function createApp(db) {
   });
 
   // ---------------- Encuestas ----------------
-  app.get('/api/tasks/:id/survey', requireAuth, (req, res, next) => {
+  app.get('/api/tasks/:id/survey', maybeAuth, (req, res, next) => {
     try {
       const s = db.prepare('SELECT * FROM surveys WHERE task_id = ?').get(req.params.id);
       if (!s) throw httpError(404, 'SURVEY_NOT_FOUND');
-      const answered = db.prepare('SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ?')
-        .get(s.id, req.user.id);
+      const answered = req.user
+        ? db.prepare('SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ?').get(s.id, req.user.id)
+        : null;
       res.json({ survey: { ...s, questions: JSON.parse(s.questions) }, answered: !!answered });
     } catch (e) { next(e); }
   });

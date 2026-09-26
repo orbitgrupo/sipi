@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../core/session.dart';
 import '../widgets/common.dart';
-import 'profile.dart';
 
 class WelcomeScreen extends StatelessWidget {
   final Session session;
@@ -88,6 +87,13 @@ class WelcomeScreen extends StatelessWidget {
                             MaterialPageRoute(
                                 builder: (_) => LoginScreen(session: session))),
                         child: const Text('Iniciar sesión'),
+                      ),
+                      TextButton(
+                        onPressed: () => session.enterGuestMode(),
+                        child: const Text('Continuar como invitado',
+                            style: TextStyle(
+                                color: SipiColors.muted,
+                                fontWeight: FontWeight.w600)),
                       ),
                       const SizedBox(height: 8),
                     ],
@@ -368,6 +374,56 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------- Pantalla final ----------------
+class ThanksScreen extends StatelessWidget {
+  const ThanksScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            children: [
+              const Spacer(),
+              Container(
+                width: 130,
+                height: 130,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                      colors: [SipiColors.gold, SipiColors.warning],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight),
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                child: const Icon(Icons.emoji_events,
+                    color: Colors.white, size: 72),
+              ),
+              const SizedBox(height: 24),
+              const Text('Gracias por ser parte\nde Sipi',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: SipiColors.text)),
+              const SizedBox(height: 10),
+              const Text('Más tareas, más oportunidades,\nun mejor mañana.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: SipiColors.muted, height: 1.5)),
+              const Spacer(),
+              SipiButton(
+                  label: 'Seguir explorando',
+                  onPressed: () =>
+                      Navigator.popUntil(context, (r) => r.isFirst)),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );

@@ -6,6 +6,7 @@ import '../core/session.dart';
 import '../core/models.dart';
 import '../widgets/common.dart';
 import 'surveys.dart';
+import 'welcome_auth.dart' show RegisterScreen;
 
 const _tabs = ['todas', 'social', 'encuestas', 'promociones'];
 
@@ -185,6 +186,16 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   bool get _hasApproved => _mine.any((c) => c.status == 'approved');
 
   Future<void> _submit() async {
+    final s = widget.session;
+    if (!s.canInteract) {
+      if (await ensureAccount(context, s) && mounted) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => RegisterScreen(session: s)));
+      }
+      return;
+    }
     setState(() => _sending = true);
     try {
       await widget.session.api.submitTask(widget.taskId);

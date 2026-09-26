@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../core/models.dart';
 import '../core/api.dart';
+import '../core/session.dart';
 
 class SipiButton extends StatelessWidget {
   final String label;
@@ -360,6 +361,93 @@ Future<void> showError(BuildContext context, Object e) {
       ],
     ),
   );
+}
+
+/// Puerta de invitado: si no hay cuenta, muestra el diálogo para crear una
+/// y devuelve false. Úsalo al inicio de cualquier acción interactiva.
+/// Si devuelve true, el llamador debe navegar a RegisterScreen.
+Future<bool> ensureAccount(BuildContext context, Session session) async {
+  if (session.canInteract) return true;
+  final go = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text('Crea tu cuenta',
+          style: TextStyle(fontWeight: FontWeight.w800)),
+      content: const Text(
+          'Estás explorando como invitado. Para ganar puntos y canjear '
+          'recompensas necesitas crear una cuenta. Es gratis.'),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Ahora no')),
+        FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Crear cuenta')),
+      ],
+    ),
+  );
+  return go == true;
+}
+
+/// Pantalla completa para secciones que requieren cuenta (canjear, logros).
+class GuestGateCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final VoidCallback onCreateAccount;
+  const GuestGateCard(
+      {super.key,
+      required this.title,
+      required this.subtitle,
+      required this.onCreateAccount});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 84,
+                height: 84,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [
+                    SipiColors.primaryLight,
+                    SipiColors.primaryDark
+                  ]),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const Icon(Icons.person_add_alt_outlined,
+                    color: Colors.white, size: 40),
+              ),
+              const SizedBox(height: 20),
+              Text(title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: SipiColors.text)),
+              const SizedBox(height: 8),
+              Text(subtitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: SipiColors.muted, fontSize: 15, height: 1.5)),
+              const SizedBox(height: 24),
+              SipiButton(
+                label: 'Crear cuenta',
+                onPressed: onCreateAccount,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class EmptyState extends StatelessWidget {

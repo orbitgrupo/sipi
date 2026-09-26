@@ -9,6 +9,7 @@ import '../core/api.dart';
 import '../widgets/common.dart';
 import 'redeem.dart' show PaymentHistoryScreen;
 import 'achievements.dart';
+import 'welcome_auth.dart' show RegisterScreen;
 
 // ---------------- Perfil ----------------
 class ProfileScreen extends StatelessWidget {
@@ -19,6 +20,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final u = session.user;
     final bal = session.balance;
+    if (session.isGuest) return _guestProfile(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Perfil')),
       body: ListView(
@@ -140,6 +142,64 @@ class ProfileScreen extends StatelessWidget {
                 session.logout();
                 Navigator.popUntil(context, (r) => r.isFirst);
               }),
+        ],
+      ),
+    );
+  }
+
+  /// Perfil del invitado: tarjeta para crear cuenta + opciones informativas.
+  Widget _guestProfile(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Perfil')),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Center(
+            child: Column(children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: SipiColors.primary.withValues(alpha: 0.12),
+                child: const Icon(Icons.person_outline,
+                    size: 40, color: SipiColors.primary),
+              ),
+              const SizedBox(height: 10),
+              const Text('Invitado',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: SipiColors.text)),
+              const Text('Explora Sipi sin compromiso',
+                  style: TextStyle(color: SipiColors.muted)),
+              const SizedBox(height: 16),
+              SipiButton(
+                  label: 'Crear cuenta gratis',
+                  onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              RegisterScreen(session: session)))),
+            ]),
+          ),
+          const SizedBox(height: 24),
+          _MenuItem(
+              icon: Icons.support_agent_outlined,
+              label: 'Soporte',
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => SupportScreen(session: session)))),
+          _MenuItem(
+              icon: Icons.settings_outlined,
+              label: 'Configuración',
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => SettingsScreen(session: session)))),
+          _MenuItem(
+              icon: Icons.logout_outlined,
+              label: 'Salir del modo invitado',
+              danger: true,
+              onTap: () => session.exitGuestMode()),
         ],
       ),
     );
@@ -960,11 +1020,17 @@ class MoreScreen extends StatelessWidget {
               onTap: () => _soon(context, 'La calificación de la app')),
           _MenuItem(
               icon: Icons.logout_outlined,
-              label: 'Cerrar sesión',
+              label: session.isGuest
+                  ? 'Salir del modo invitado'
+                  : 'Cerrar sesión',
               danger: true,
               onTap: () {
-                session.logout();
-                Navigator.popUntil(context, (r) => r.isFirst);
+                if (session.isGuest) {
+                  session.exitGuestMode();
+                } else {
+                  session.logout();
+                  Navigator.popUntil(context, (r) => r.isFirst);
+                }
               }),
         ],
       ),
@@ -972,52 +1038,3 @@ class MoreScreen extends StatelessWidget {
   }
 }
 
-// ---------------- Pantalla final ----------------
-class ThanksScreen extends StatelessWidget {
-  const ThanksScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            children: [
-              const Spacer(),
-              Container(
-                width: 130,
-                height: 130,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: [SipiColors.gold, SipiColors.warning],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight),
-                  borderRadius: BorderRadius.circular(32),
-                ),
-                child: const Icon(Icons.emoji_events,
-                    color: Colors.white, size: 72),
-              ),
-              const SizedBox(height: 24),
-              const Text('Gracias por ser parte\nde Sipi',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: SipiColors.text)),
-              const SizedBox(height: 10),
-              const Text('Más tareas, más oportunidades,\nun mejor mañana.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: SipiColors.muted, height: 1.5)),
-              const Spacer(),
-              SipiButton(
-                  label: 'Seguir explorando',
-                  onPressed: () =>
-                      Navigator.popUntil(context, (r) => r.isFirst)),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

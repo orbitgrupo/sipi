@@ -293,3 +293,35 @@ describe('aprobación de cuentas', () => {
     expect(r.status).toBe(400);
   });
 });
+
+describe('modo invitado (endpoints públicos)', () => {
+  test('GET /api/tasks sin token devuelve tareas', async () => {
+    const r = await request(app).get('/api/tasks');
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body.tasks)).toBe(true);
+    expect(r.body.tasks.length).toBeGreaterThan(0);
+    expect(r.body.tasks[0].my_status).toBeNull();
+  });
+  test('GET /api/tasks con token incluye my_status', async () => {
+    const r = await request(app).get('/api/tasks').set(auth(userToken));
+    expect(r.status).toBe(200);
+    expect('my_status' in r.body.tasks[0]).toBe(true);
+  });
+  test('GET /api/tasks/:id sin token devuelve la tarea sin completados', async () => {
+    const list = await request(app).get('/api/tasks');
+    const id = list.body.tasks[0].id;
+    const r = await request(app).get(`/api/tasks/${id}`);
+    expect(r.status).toBe(200);
+    expect(r.body.task.id).toBe(id);
+    expect(r.body.my_completions).toEqual([]);
+  });
+  test('POST /api/tasks/:id/submit sin token sigue protegido', async () => {
+    const list = await request(app).get('/api/tasks');
+    const r = await request(app).post(`/api/tasks/${list.body.tasks[0].id}/submit`).send({});
+    expect(r.status).toBe(401);
+  });
+  test('POST /api/redemptions sin token sigue protegido', async () => {
+    const r = await request(app).post('/api/redemptions').send({ points: 50 });
+    expect(r.status).toBe(401);
+  });
+});

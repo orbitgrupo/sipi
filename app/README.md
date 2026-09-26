@@ -56,7 +56,7 @@ lib/
 
 | # | Pantalla | Archivo |
 |---|---|---|
-| 1 | Bienvenida | `welcome_auth.dart` |
+| 1 | Bienvenida | `welcome_auth.dart` (con "Continuar como invitado") |
 | 2 | Registro | `welcome_auth.dart` → lleva a agradecimiento |
 | 3 | Inicio de sesión | `welcome_auth.dart` |
 | 4 | Inicio (saldo, categorías, destacadas) | `home.dart` |
@@ -95,3 +95,10 @@ montos: los puntos por tarea y la conversión a USD vienen del servidor.
 El registro no exige verificar el correo: la cuenta nace pendiente y el
 perfil muestra "Cuenta pendiente de aprobación" hasta que un admin la
 apruebe desde el panel.
+
+Modo invitado: desde la bienvenida se puede entrar sin cuenta
+(`Session.enterGuestMode()`). El invitado explora tareas, encuestas, inicio
+y soporte usando los endpoints públicos; cualquier interacción (enviar una
+tarea, responder una encuesta, canjear, ver logros, notificaciones) muestra
+un diálogo que pide crear una cuenta. Canjear y Logros muestran una pantalla
+con invitación a registrarse, y el perfil ofrece "Crear cuenta gratis".

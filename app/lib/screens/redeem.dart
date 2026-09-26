@@ -4,6 +4,7 @@ import '../core/theme.dart';
 import '../core/session.dart';
 import '../core/models.dart';
 import '../widgets/common.dart';
+import 'welcome_auth.dart' show RegisterScreen;
 
 class RedeemScreen extends StatefulWidget {
   final Session session;
@@ -18,6 +19,17 @@ class _RedeemScreenState extends State<RedeemScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.session.isGuest) {
+      return GuestGateCard(
+        title: 'Canjear recompensas',
+        subtitle:
+            'Crea una cuenta gratis para canjear tus puntos por dinero.',
+        onCreateAccount: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => RegisterScreen(session: widget.session))),
+      );
+    }
     final bal = widget.session.balance;
     final ppu = bal?.pointsPerUsd ?? 50;
     final points = bal?.points ?? 0;

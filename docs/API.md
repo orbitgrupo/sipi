@@ -27,11 +27,17 @@ Roles: `user` y `admin` (los endpoints `/api/admin/*` exigen admin).
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/api/tasks?category=&q=` | Tareas activas, con filtros |
-| GET | `/api/tasks/:id` | Detalle de tarea |
+| GET | `/api/tasks?category=&q=` | Pública. Tareas activas, con filtros |
+| GET | `/api/tasks/:id` | Pública. Detalle de tarea |
 | POST | `/api/tasks/:id/submit` | Enviar a verificación `{evidence?}` |
-| GET | `/api/tasks/:id/survey` | Encuesta de la tarea |
+| GET | `/api/tasks/:id/survey` | Pública. Encuesta de la tarea |
 | POST | `/api/tasks/:id/survey` | Responder; si es válida acredita auto |
+
+Las rutas públicas aceptan token opcional: sin token devuelven el contenido
+sin datos del usuario (`my_status` nulo, `my_completions` vacío); con token
+incluyen el estado personal. El modo invitado de la app usa estas rutas para
+explorar sin cuenta; cualquier acción (enviar, responder, canjear) pide crear
+una cuenta.
 
 Categorías: `social`, `encuestas`, `productos`, `opinion`, `promociones`, `otras`.
 Verificación: `manual` (aprueba un admin) o `auto` (encuestas).

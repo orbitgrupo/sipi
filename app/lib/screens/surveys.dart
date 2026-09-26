@@ -6,6 +6,7 @@ import '../core/session.dart';
 import '../core/models.dart';
 import '../widgets/common.dart';
 import 'tasks.dart' show TaskSuccessScreen;
+import 'welcome_auth.dart' show RegisterScreen;
 
 class SurveyAnswerScreen extends StatefulWidget {
   final Session session;
@@ -55,6 +56,15 @@ class _SurveyAnswerScreenState extends State<SurveyAnswerScreen> {
   }
 
   Future<void> _submit() async {
+    final s = widget.session;
+    if (!s.canInteract) {
+      if (await ensureAccount(context, s) && mounted) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => RegisterScreen(session: s)));
+      }
+      return;
+    }
     setState(() => _sending = true);
     try {
       final r = await widget.session.api.answerSurvey(widget.taskId, _answers);
