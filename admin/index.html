@@ -283,6 +283,8 @@ let PAGE = 'panel';
 let ADMIN_NAME = '';
 
 const CATS = {social:'Redes sociales',encuestas:'Encuestas',productos:'Productos',opinion:'Opinión',promociones:'Promociones',otras:'Otras'};
+const SOCIAL_NAMES = {instagram:'Instagram',tiktok:'TikTok',facebook:'Facebook',x:'X',youtube:'YouTube'};
+const socialName = (n) => SOCIAL_NAMES[n] || 'la red';
 const DONUT_COLORS = ['#2563EB','#8B5CF6','#F59E0B','#10B981','#94A3B8'];
 const AVATAR_COLORS = ['#2563EB','#7C3AED','#059669','#D97706','#DB2777','#0891B2'];
 
@@ -558,7 +560,7 @@ async function vTareas(){
 }
 function taskRowHtml(t){
   return `<tr>
-    <td><div class="cell-main">${h(t.title)}</div><div class="cell-sub">${h((t.description||'').slice(0,70))}</div></td>
+    <td><div class="cell-main">${h(t.title)}${t.social_network?` <span class="pill info">@${h(socialName(t.social_network))}</span>`:''}</div><div class="cell-sub">${h((t.description||'').slice(0,70))}</div></td>
     <td><span class="pill info">${h(CATS[t.category]||t.category)}</span></td>
     <td><b>${t.points}</b></td>
     <td>${t.active ? '<span class="pill ok">Activo</span>' : '<span class="pill warn">Pausada</span>'}</td>
@@ -629,6 +631,19 @@ function taskModal(id, presetCat){
     <label class="f">Verificación</label><select class="in" id="f_ver">
       ${['manual','auto','survey'].map(vv => `<option value="${vv}" ${t.verification===vv?'selected':''}>${{manual:'Manual (revisión)',auto:'Automática',survey:'Encuesta'}[vv]}</option>`).join('')}
     </select>
+    <div class="grid-f">
+      <div><label class="f">Red social (opcional)</label><select class="in" id="f_net">
+        <option value="">Ninguna</option>
+        ${[['instagram','Instagram'],['tiktok','TikTok'],['facebook','Facebook'],['x','X'],['youtube','YouTube']].map(([k,l]) =>
+          `<option value="${k}" ${(t.social_network||'')===k?'selected':''}>${l}</option>`).join('')}
+      </select></div>
+      <div><label class="f">Acción en la red</label><select class="in" id="f_act">
+        <option value="">—</option>
+        ${[['follow','Seguir'],['like','Me gusta'],['share','Compartir'],['comment','Comentar'],['subscribe','Suscribirse']].map(([k,l]) =>
+          `<option value="${k}" ${(t.social_action||'')===k?'selected':''}>${l}</option>`).join('')}
+      </select></div>
+    </div>
+    <p class="hint">Si eliges una red social, el usuario deberá indicar su usuario en esa red y el envío quedará pendiente hasta que lo verifiques.</p>
     <label class="f">Requisitos</label><input class="in" id="f_req" value="${h(t.requirements||'')}">
     <label class="f">URL destino</label><input class="in" id="f_url" value="${h(t.target_url||'')}">
     <div class="error" id="mErr"></div>
@@ -642,6 +657,7 @@ async function saveTask(id){
     category:f_cat.value, points:parseInt(f_pts.value)||0, estimated_minutes:parseInt(f_min.value)||5,
     max_completions_per_user:parseInt(f_max.value)||1, verification:f_ver.value,
     requirements:f_req.value.trim(), target_url:f_url.value.trim(),
+    social_network:f_net.value||null, social_action:f_net.value?(f_act.value||null):null,
   };
   if(!body.title || body.points < 1){ err.textContent='Título y puntos (mínimo 1) son obligatorios.'; return; }
   try {
@@ -666,6 +682,7 @@ async function vReviews(body){
         <div class="grow">
           <div class="cell-main">${h(c.task_title)} <span class="pill info">${c.task_points} pts</span></div>
           <div class="cell-sub">${h(c.user_name)} · ${h(c.user_email)} · enviada ${isNaN(dt)?h(c.created_at):dt.toLocaleString('es')}</div>
+          ${c.handle ? `<div class="evid"><b>Usuario en ${h(socialName(c.network))}:</b> @${h(c.handle)} <span class="hint">— verifícalo en la red antes de aprobar</span></div>` : ''}
           ${c.evidence ? `<div class="evid"><b>Evidencia:</b> ${h(c.evidence)}</div>` : ''}
         </div>
         <div class="row-actions">
@@ -707,7 +724,7 @@ function drawOfferRows(){
   const q = (qEl.value||'').toLowerCase();
   const list = tasksCache.filter(t => (t.title+' '+(t.description||'')).toLowerCase().includes(q));
   document.getElementById('oBody').innerHTML = list.length ? list.map(t => `<tr>
-    <td><div class="cell-main">${h(t.title)}</div><div class="cell-sub">${h((t.description||'').slice(0,70))}</div></td>
+    <td><div class="cell-main">${h(t.title)}${t.social_network?` <span class="pill info">@${h(socialName(t.social_network))}</span>`:''}</div><div class="cell-sub">${h((t.description||'').slice(0,70))}</div></td>
     <td><b>${t.points}</b></td>
     <td>${t.active ? '<span class="pill ok">Activo</span>' : '<span class="pill warn">Pausada</span>'}</td>
     <td><div class="row-actions">

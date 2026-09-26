@@ -25,6 +25,8 @@ class ApiException implements Exception {
         return 'Ya completaste esta tarea.';
       case 'ALREADY_PENDING':
         return 'Ya enviaste esta tarea, está en revisión.';
+      case 'HANDLE_REQUIRED':
+        return 'Indica tu usuario en la red social para participar.';
       case 'SURVEY_ALREADY_ANSWERED':
         return 'Ya respondiste esta encuesta.';
       case 'AMOUNT_TOO_LOW':
@@ -137,9 +139,10 @@ class SipiApi {
     );
   }
 
-  Future<TaskCompletion> submitTask(int id, {String evidence = ''}) async {
-    final j =
-        await _req('POST', '/api/tasks/$id/submit', {'evidence': evidence});
+  Future<TaskCompletion> submitTask(int id, {String evidence = '', String? handle}) async {
+    final body = <String, dynamic>{'evidence': evidence};
+    if (handle != null && handle.isNotEmpty) body['handle'] = handle;
+    final j = await _req('POST', '/api/tasks/$id/submit', body);
     return TaskCompletion.fromJson(j['completion']);
   }
 

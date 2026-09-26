@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   target_url TEXT NOT NULL DEFAULT '',
   max_completions_per_user INTEGER NOT NULL DEFAULT 1,
   active INTEGER NOT NULL DEFAULT 1,
+  social_network TEXT,
+  social_action TEXT,
   created_by INTEGER REFERENCES users(id),
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -44,6 +46,8 @@ CREATE TABLE IF NOT EXISTS task_completions (
   user_id INTEGER NOT NULL REFERENCES users(id),
   status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
   evidence TEXT NOT NULL DEFAULT '',
+  handle TEXT,
+  network TEXT,
   submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
   reviewed_at TEXT,
   reviewed_by INTEGER REFERENCES users(id)
@@ -151,6 +155,21 @@ function openDb(dbPath) {
   const cols = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
   if (!cols.includes('approved')) {
     db.exec('ALTER TABLE users ADD COLUMN approved INTEGER NOT NULL DEFAULT 1');
+  }
+  // Migración: tareas de redes sociales (verificación por usuario de la red).
+  const taskCols = db.prepare('PRAGMA table_info(tasks)').all().map((c) => c.name);
+  if (!taskCols.includes('social_network')) {
+    db.exec('ALTER TABLE tasks ADD COLUMN social_network TEXT');
+  }
+  if (!taskCols.includes('social_action')) {
+    db.exec('ALTER TABLE tasks ADD COLUMN social_action TEXT');
+  }
+  const compCols = db.prepare('PRAGMA table_info(task_completions)').all().map((c) => c.name);
+  if (!compCols.includes('handle')) {
+    db.exec('ALTER TABLE task_completions ADD COLUMN handle TEXT');
+  }
+  if (!compCols.includes('network')) {
+    db.exec('ALTER TABLE task_completions ADD COLUMN network TEXT');
   }
   seed(db);
   return db;

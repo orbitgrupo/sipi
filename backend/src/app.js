@@ -8,6 +8,9 @@ const { getBalance, addEntry, getMovements, httpError } = require('./ledger');
 const { checkAndAward, metricValue } = require('./achievements');
 
 const CATEGORIES = ['social', 'encuestas', 'productos', 'opinion', 'promociones', 'otras'];
+// Redes y acciones para tareas con verificación por usuario de la red social.
+const SOCIAL_NETWORKS = ['instagram', 'tiktok', 'facebook', 'x', 'youtube'];
+const SOCIAL_ACTIONS = ['follow', 'like', 'share', 'comment', 'subscribe'];
 
 function levelFor(pointsEarned) {
   return Math.floor(pointsEarned / 1000) + 1;
@@ -20,6 +23,14 @@ function validateTaskInput(b) {
   if (b.verification && !['manual', 'auto'].includes(b.verification)) throw httpError(400, 'INVALID_VERIFICATION');
   if (b.max_completions_per_user !== undefined && (!Number.isInteger(b.max_completions_per_user) || b.max_completions_per_user < 1)) {
     throw httpError(400, 'INVALID_MAX_COMPLETIONS');
+  }
+  // Tareas de redes sociales: la red y la acción son opcionales, pero si
+  // vienen deben ser valores conocidos. null/'' = tarea normal.
+  if (b.social_network != null && b.social_network !== '' && !SOCIAL_NETWORKS.includes(b.social_network)) {
+    throw httpError(400, 'INVALID_SOCIAL_NETWORK');
+  }
+  if (b.social_action != null && b.social_action !== '' && !SOCIAL_ACTIONS.includes(b.social_action)) {
+    throw httpError(400, 'INVALID_SOCIAL_ACTION');
   }
 }
 
@@ -202,8 +213,12 @@ function createApp(db) {
     if (req.user) {
       sql = `SELECT t.*, c.status AS my_status FROM tasks t
              LEFT JOIN task_completions c ON c.task_id = t.id AND c.user_id = ? AND c.status IN ('pending','approved')
-             WHERE t.active = 1`;
-      params = [req.user.id];
+             WHERE t.active = 1
+             -- Las tareas de redes sociales ya aprobadas no vuelven a mostrarse.
+             AND NOT (t.social_network IS NOT NULL AND EXISTS (
+               SELECT 1 FROM task_completions cc
+               WHERE cc.task_id = t.id AND cc.user_id = ? AND cc.status = 'approved'))`;
+      params = [req.user.id, req.user.id];
     } else {
       sql = `SELECT t.*, NULL AS my_status FROM tasks t WHERE t.active = 1`;
       params = [];
@@ -219,7 +234,7 @@ function createApp(db) {
       const t = db.prepare('SELECT * FROM tasks WHERE id = ? AND active = 1').get(req.params.id);
       if (!t) throw httpError(404, 'TASK_NOT_FOUND');
       const completions = req.user
-        ? db.prepare('SELECT id, status, submitted_at FROM task_completions WHERE task_id = ? AND user_id = ? ORDER BY id DESC').all(t.id, req.user.id)
+        ? db.prepare('SELECT id, status, handle, network, submitted_at FROM task_completions WHERE task_id = ? AND user_id = ? ORDER BY id DESC').all(t.id, req.user.id)
         : [];
       res.json({ task: t, my_completions: completions });
     } catch (e) { next(e); }
@@ -227,9 +242,14 @@ function createApp(db) {
 
   app.post('/api/tasks/:id/submit', requireAuth, (req, res, next) => {
     try {
+      const body = req.body || {};
+      const handle = typeof body.handle === 'string' ? body.handle.trim().replace(/^@+/, '') : '';
       const submitTx = transaction(db, (taskId, userId, evidence) => {
         const t = db.prepare('SELECT * FROM tasks WHERE id = ? AND active = 1').get(taskId);
         if (!t) throw httpError(404, 'TASK_NOT_FOUND');
+        // Tareas de redes sociales: el usuario debe indicar su usuario en la
+        // red para que el administrador pueda verificar que la cumplió.
+        if (t.social_network && !handle) throw httpError(400, 'HANDLE_REQUIRED');
         const counts = db.prepare(
           `SELECT
              SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved,
@@ -238,11 +258,11 @@ function createApp(db) {
         ).get(taskId, userId);
         if ((counts.approved || 0) >= t.max_completions_per_user) throw httpError(409, 'TASK_LIMIT_REACHED');
         if ((counts.pending || 0) >= t.max_completions_per_user) throw httpError(409, 'ALREADY_PENDING');
-        const info = db.prepare('INSERT INTO task_completions (task_id, user_id, evidence) VALUES (?, ?, ?)')
-          .run(taskId, userId, evidence || '');
+        const info = db.prepare('INSERT INTO task_completions (task_id, user_id, evidence, handle, network) VALUES (?, ?, ?, ?, ?)')
+          .run(taskId, userId, evidence || '', handle || null, t.social_network || null);
         return db.prepare('SELECT * FROM task_completions WHERE id = ?').get(info.lastInsertRowid);
       });
-      const completion = submitTx(req.params.id, req.user.id, (req.body || {}).evidence || '');
+      const completion = submitTx(req.params.id, req.user.id, body.evidence || '');
       res.status(201).json({ completion });
     } catch (e) { next(e); }
   });
@@ -427,9 +447,11 @@ function createApp(db) {
       validateTaskInput(b);
       const info = db.prepare(
         `INSERT INTO tasks (title, description, instructions, category, points, estimated_minutes,
-                            verification, requirements, target_url, max_completions_per_user, created_by)
+                            verification, requirements, target_url, max_completions_per_user,
+                            social_network, social_action, created_by)
          VALUES (@title, @description, @instructions, @category, @points, @estimated_minutes,
-                 @verification, @requirements, @target_url, @max_completions_per_user, @created_by)`
+                 @verification, @requirements, @target_url, @max_completions_per_user,
+                 @social_network, @social_action, @created_by)`
       ).run({
         title: b.title.trim(),
         description: b.description || '',
@@ -441,6 +463,8 @@ function createApp(db) {
         requirements: b.requirements || '',
         target_url: b.target_url || '',
         max_completions_per_user: b.max_completions_per_user || 1,
+        social_network: b.social_network || null,
+        social_action: b.social_action || null,
         created_by: req.user.id,
       });
       res.status(201).json({ task: db.prepare('SELECT * FROM tasks WHERE id = ?').get(info.lastInsertRowid) });
@@ -458,7 +482,9 @@ function createApp(db) {
         `UPDATE tasks SET title=@title, description=@description, instructions=@instructions,
           category=@category, points=@points, estimated_minutes=@estimated_minutes,
           verification=@verification, requirements=@requirements, target_url=@target_url,
-          max_completions_per_user=@max_completions_per_user, active=@active WHERE id=@id`
+          max_completions_per_user=@max_completions_per_user,
+          social_network=@social_network, social_action=@social_action,
+          active=@active WHERE id=@id`
       ).run({
         id: req.params.id,
         title: String(m.title).trim(),
@@ -471,6 +497,8 @@ function createApp(db) {
         requirements: m.requirements || '',
         target_url: m.target_url || '',
         max_completions_per_user: m.max_completions_per_user ?? 1,
+        social_network: b.social_network !== undefined ? (b.social_network || null) : (row.social_network || null),
+        social_action: b.social_action !== undefined ? (b.social_action || null) : (row.social_action || null),
         active: b.active === undefined ? (row.active ? 1 : 0) : (b.active ? 1 : 0),
       });
       if (!info.changes) throw httpError(404, 'TASK_NOT_FOUND');

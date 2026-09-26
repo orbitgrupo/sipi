@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../core/models.dart';
+import '../core/social_labels.dart';
 import '../core/api.dart';
 import '../core/session.dart';
 
@@ -169,6 +170,20 @@ class TaskCard extends StatelessWidget {
                             fontSize: 14,
                             color: SipiColors.text,
                             height: 1.25)),
+                    if (task.isSocial) ...[
+                      const SizedBox(height: 4),
+                      Row(children: [
+                        Icon(socialNetworkIcon(task.socialNetwork),
+                            size: 13, color: SipiColors.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                            '${socialActionText(task.socialAction, task.socialNetwork)} · pide tu usuario',
+                            style: const TextStyle(
+                                color: SipiColors.primary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
+                      ]),
+                    ],
                     const SizedBox(height: 4),
                     Row(children: [
                       Container(

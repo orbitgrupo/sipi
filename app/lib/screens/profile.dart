@@ -9,6 +9,7 @@ import '../core/api.dart';
 import '../widgets/common.dart';
 import 'redeem.dart' show PaymentHistoryScreen;
 import 'achievements.dart';
+import 'legal.dart';
 import 'welcome_auth.dart' show RegisterScreen;
 
 // ---------------- Perfil ----------------
@@ -905,11 +906,17 @@ class SettingsScreen extends StatelessWidget {
             _SettingsItem(
                 icon: Icons.description_outlined,
                 label: 'Términos y condiciones',
-                onTap: () => _soon(context, 'Los términos y condiciones')),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const TermsScreen()))),
             _SettingsItem(
                 icon: Icons.policy_outlined,
                 label: 'Política de privacidad',
-                onTap: () => _soon(context, 'La política de privacidad')),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const PrivacyScreen()))),
             _SettingsItem(
                 icon: Icons.info_outline,
                 label: 'Acerca de Sipi',

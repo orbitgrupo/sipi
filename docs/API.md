@@ -29,7 +29,7 @@ Roles: `user` y `admin` (los endpoints `/api/admin/*` exigen admin).
 |---|---|---|
 | GET | `/api/tasks?category=&q=` | Pública. Tareas activas, con filtros |
 | GET | `/api/tasks/:id` | Pública. Detalle de tarea |
-| POST | `/api/tasks/:id/submit` | Enviar a verificación `{evidence?}` |
+| POST | `/api/tasks/:id/submit` | Enviar a verificación `{evidence?, handle?}` |
 | GET | `/api/tasks/:id/survey` | Pública. Encuesta de la tarea |
 | POST | `/api/tasks/:id/survey` | Responder; si es válida acredita auto |
 
@@ -38,6 +38,17 @@ sin datos del usuario (`my_status` nulo, `my_completions` vacío); con token
 incluyen el estado personal. El modo invitado de la app usa estas rutas para
 explorar sin cuenta; cualquier acción (enviar, responder, canjear) pide crear
 una cuenta.
+
+## Tareas de redes sociales
+
+Una tarea puede pedir `social_network` (`instagram`, `tiktok`, `facebook`,
+`x`, `youtube`) y `social_action` (`follow`, `like`, `share`, `comment`,
+`subscribe`). Al enviarla, el usuario debe incluir su `handle` (usuario en
+esa red); sin él el servidor responde `400 HANDLE_REQUIRED`. El envío queda
+`pending` con el `handle` y la red guardados, y el administrador lo verifica
+en el panel (ve el usuario para comprobarlo en la red) antes de aprobar.
+Una tarea social aprobada **ya no aparece** en el listado de ese usuario;
+para otros usuarios sigue visible.
 
 Categorías: `social`, `encuestas`, `productos`, `opinion`, `promociones`, `otras`.
 Verificación: `manual` (aprueba un admin) o `auto` (encuestas).

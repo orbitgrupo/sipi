@@ -4,8 +4,10 @@ import 'package:flutter/services.dart';
 import '../core/theme.dart';
 import '../core/session.dart';
 import '../core/models.dart';
+import '../core/social_labels.dart';
 import '../widgets/common.dart';
 import 'surveys.dart';
+import 'legal.dart';
 import 'welcome_auth.dart' show RegisterScreen;
 
 const _tabs = ['todas', 'social', 'encuestas', 'promociones'];
@@ -184,8 +186,14 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
   bool get _hasPending => _mine.any((c) => c.status == 'pending');
   bool get _hasApproved => _mine.any((c) => c.status == 'approved');
+  String? get _pendingHandle {
+    for (final c in _mine) {
+      if (c.status == 'pending' && (c.handle ?? '').isNotEmpty) return c.handle;
+    }
+    return null;
+  }
 
-  Future<void> _submit() async {
+  Future<void> _submit({String? handle}) async {
     final s = widget.session;
     if (!s.canInteract) {
       if (await ensureAccount(context, s) && mounted) {
@@ -198,7 +206,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     }
     setState(() => _sending = true);
     try {
-      await widget.session.api.submitTask(widget.taskId);
+      await widget.session.api.submitTask(widget.taskId, handle: handle);
       await widget.session.refreshBalance();
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -319,19 +327,26 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                           text: 'Ya completaste esta tarea.',
                           color: SipiColors.success)
                     else if (_hasPending)
-                      const _StatusBanner(
+                      _StatusBanner(
                           icon: Icons.hourglass_empty,
-                          text: 'Enviada. Tu actividad está siendo verificada.',
+                          text: _pendingHandle != null
+                              ? 'Enviada como @$_pendingHandle. Tu actividad está siendo verificada.'
+                              : 'Enviada. Tu actividad está siendo verificada.',
                           color: SipiColors.warning)
                     else if (!_started)
                       SipiButton(
                           label: 'Realizar tarea',
                           onPressed: () => setState(() => _started = true))
+                    else if (t.isSocial)
+                      _SocialHandleForm(
+                          task: t,
+                          sending: _sending,
+                          onSubmit: (handle) => _submit(handle: handle))
                     else
                       SipiButton(
                           label: 'Enviar para verificar',
                           loading: _sending,
-                          onPressed: _submit),
+                          onPressed: () => _submit()),
                     const SizedBox(height: 12),
                     const Text(
                         'La recompensa solo se acredita después de una verificación válida.',
@@ -464,6 +479,149 @@ class TaskSuccessScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ---------------- Formulario de tareas de redes sociales ----------------
+/// Formulario para participar en una tarea de red social: el usuario indica
+/// su usuario en la red para que el administrador pueda verificar la acción.
+class _SocialHandleForm extends StatefulWidget {
+  final Task task;
+  final bool sending;
+  final ValueChanged<String> onSubmit;
+  const _SocialHandleForm(
+      {required this.task, required this.sending, required this.onSubmit});
+
+  @override
+  State<_SocialHandleForm> createState() => _SocialHandleFormState();
+}
+
+class _SocialHandleFormState extends State<_SocialHandleForm> {
+  final _ctrl = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _go() {
+    final handle = _ctrl.text.trim().replaceAll(RegExp(r'^@+'), '');
+    if (handle.isEmpty) {
+      setState(() => _error = 'Escribe tu usuario de ${socialNetworkName(widget.task.socialNetwork)}.');
+      return;
+    }
+    setState(() => _error = null);
+    widget.onSubmit(handle);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.task;
+    final netName = socialNetworkName(t.socialNetwork);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: SipiColors.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: SipiColors.primary.withValues(alpha: 0.25)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: SipiColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(socialNetworkIcon(t.socialNetwork),
+                    color: SipiColors.primary, size: 26),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(socialActionText(t.socialAction, t.socialNetwork),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: SipiColors.text)),
+                    const SizedBox(height: 2),
+                    const Text(
+                        'Indica tu usuario para que podamos verificarlo.',
+                        style: TextStyle(
+                            color: SipiColors.muted, fontSize: 13, height: 1.4)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        const _DetailLabel('Tu usuario'),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _ctrl,
+          autocorrect: false,
+          decoration: InputDecoration(
+            hintText: 'Tu usuario de $netName',
+            prefixIcon: const Icon(Icons.alternate_email),
+            errorText: _error,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14)),
+            filled: true,
+            fillColor: Colors.white,
+          ),
+          onChanged: (_) {
+            if (_error != null) setState(() => _error = null);
+          },
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.lock_outline, size: 16, color: SipiColors.muted),
+            const SizedBox(width: 6),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const PrivacyScreen())),
+                child: const Text.rich(
+                  TextSpan(
+                    style: TextStyle(
+                        color: SipiColors.muted, fontSize: 12, height: 1.5),
+                    children: [
+                      TextSpan(
+                          text:
+                              'Tu usuario solo se usará para verificar que completaste esta tarea. '),
+                      TextSpan(
+                          text: 'Ver términos y privacidad.',
+                          style: TextStyle(
+                              color: SipiColors.primary,
+                              fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.underline)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        SipiButton(
+            label: 'Enviar para verificar',
+            loading: widget.sending,
+            onPressed: _go),
+      ],
     );
   }
 }

@@ -102,3 +102,16 @@ y soporte usando los endpoints públicos; cualquier interacción (enviar una
 tarea, responder una encuesta, canjear, ver logros, notificaciones) muestra
 un diálogo que pide crear una cuenta. Canjear y Logros muestran una pantalla
 con invitación a registrarse, y el perfil ofrece "Crear cuenta gratis".
+
+Tareas de redes sociales: cuando una tarea pide una red (`social_network`),
+el detalle muestra un formulario donde el usuario escribe su usuario en esa
+red; ese dato viaja como `handle` en `POST /api/tasks/:id/submit` y el
+servidor lo exige (`400 HANDLE_REQUIRED` si falta). El envío queda pendiente
+y el administrador lo verifica en el panel viendo el usuario. El formulario
+incluye el aviso de privacidad con enlace a los Términos y la Política.
+Una tarea social aprobada deja de aparecer en la lista de ese usuario.
+
+Términos y privacidad: pantallas reales en `screens/legal.dart`
+(`TermsScreen`, `PrivacyScreen`), enlazadas desde Ajustes y desde el
+formulario de tareas sociales. Incluyen la cláusula de que el usuario de la
+red social solo se usa para verificar la tarea.

@@ -13,10 +13,10 @@ if (!db.prepare('SELECT id FROM users WHERE email = ?').get(adminEmail)) {
 const adminId = db.prepare('SELECT id FROM users WHERE email = ?').get(adminEmail).id;
 
 const TASKS = [
-  { title: 'Seguir una cuenta en Instagram', description: 'Sigue la cuenta indicada y mantén el seguimiento durante 7 días.', instructions: 'Sigue la cuenta indicada y no dejes de seguirla por 7 días.', category: 'social', points: 10, estimated_minutes: 2, verification: 'manual', target_url: 'https://instagram.com' },
+  { title: 'Seguir una cuenta en Instagram', description: 'Sigue la cuenta indicada y mantén el seguimiento durante 7 días.', instructions: 'Sigue la cuenta indicada y no dejes de seguirla por 7 días.', category: 'social', points: 10, estimated_minutes: 2, verification: 'manual', target_url: 'https://instagram.com', social_network: 'instagram', social_action: 'follow' },
   { title: 'Dar like a una publicación', description: 'Interactúa con la publicación indicada.', instructions: 'Abre el enlace y dale like a la publicación.', category: 'social', points: 5, estimated_minutes: 1, verification: 'auto', target_url: '' },
   { title: 'Ver un video en TikTok', description: 'Mira el video completo.', instructions: 'Reproduce el video hasta el final.', category: 'social', points: 10, estimated_minutes: 3, verification: 'auto', target_url: 'https://tiktok.com' },
-  { title: 'Suscribirte en YouTube', description: 'Suscríbete al canal indicado.', instructions: 'Abre el canal y pulsa Suscribirse.', category: 'social', points: 15, estimated_minutes: 2, verification: 'manual', target_url: 'https://youtube.com' },
+  { title: 'Suscribirte en YouTube', description: 'Suscríbete al canal indicado.', instructions: 'Abre el canal y pulsa Suscribirse.', category: 'social', points: 15, estimated_minutes: 2, verification: 'manual', target_url: 'https://youtube.com', social_network: 'youtube', social_action: 'subscribe' },
   { title: 'Completar encuesta de productos', description: 'Responde preguntas sobre productos que usas a diario.', instructions: 'Responde todas las preguntas con honestidad.', category: 'encuestas', points: 25, estimated_minutes: 5, verification: 'auto' },
   { title: 'Opinión sobre bebidas deportivas', description: 'Cuéntanos tu opinión en 5 minutos.', instructions: 'Completa la encuesta.', category: 'opinion', points: 25, estimated_minutes: 5, verification: 'auto' },
   { title: 'Probar una app', description: 'Instala la app y úsala por 5 minutos.', instructions: 'Descarga la app desde el enlace y explórala.', category: 'promociones', points: 30, estimated_minutes: 10, verification: 'manual', target_url: '' },
@@ -24,12 +24,17 @@ const TASKS = [
 ];
 
 const insertTask = db.prepare(
-  `INSERT INTO tasks (title, description, instructions, category, points, estimated_minutes, verification, target_url, created_by)
-   VALUES (@title, @description, @instructions, @category, @points, @estimated_minutes, @verification, @target_url, @created_by)`
+  `INSERT INTO tasks (title, description, instructions, category, points, estimated_minutes, verification, target_url, social_network, social_action, created_by)
+   VALUES (@title, @description, @instructions, @category, @points, @estimated_minutes, @verification, @target_url, @social_network, @social_action, @created_by)`
 );
 for (const t of TASKS) {
   const exists = db.prepare('SELECT id FROM tasks WHERE title = ?').get(t.title);
-  if (!exists) insertTask.run({ target_url: '', description: '', instructions: '', ...t, created_by: adminId });
+  if (!exists) insertTask.run({ target_url: '', description: '', instructions: '', social_network: null, social_action: null, ...t, created_by: adminId });
+}
+// Las tareas sociales del seed nacen con su red configurada aunque ya existieran.
+for (const t of TASKS.filter((x) => x.social_network)) {
+  db.prepare('UPDATE tasks SET social_network = ?, social_action = ? WHERE title = ? AND social_network IS NULL')
+    .run(t.social_network, t.social_action, t.title);
 }
 
 const surveyTask = db.prepare('SELECT id FROM tasks WHERE title = ?').get('Completar encuesta de productos');

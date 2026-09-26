@@ -58,6 +58,8 @@ class Task {
   final String verification;
   final String requirements;
   final String targetUrl;
+  final String? socialNetwork;
+  final String? socialAction;
   final String? myStatus;
   Task({
     required this.id,
@@ -70,6 +72,8 @@ class Task {
     required this.verification,
     required this.requirements,
     required this.targetUrl,
+    this.socialNetwork,
+    this.socialAction,
     this.myStatus,
   });
   factory Task.fromJson(Map<String, dynamic> j) => Task(
@@ -83,16 +87,21 @@ class Task {
         verification: j['verification'] ?? 'manual',
         requirements: j['requirements'] ?? '',
         targetUrl: j['target_url'] ?? '',
+        socialNetwork: j['social_network'],
+        socialAction: j['social_action'],
         myStatus: j['my_status'],
       );
+  bool get isSocial => socialNetwork != null && socialNetwork!.isNotEmpty;
 }
 
 class TaskCompletion {
   final int id;
   final String status;
-  TaskCompletion({required this.id, required this.status});
+  final String? handle;
+  final String? network;
+  TaskCompletion({required this.id, required this.status, this.handle, this.network});
   factory TaskCompletion.fromJson(Map<String, dynamic> j) =>
-      TaskCompletion(id: j['id'], status: j['status'] ?? 'pending');
+      TaskCompletion(id: j['id'], status: j['status'] ?? 'pending', handle: j['handle'], network: j['network']);
 }
 
 class SurveyQuestion {

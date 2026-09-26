@@ -325,3 +325,72 @@ describe('modo invitado (endpoints públicos)', () => {
     expect(r.status).toBe(401);
   });
 });
+
+describe('tareas de redes sociales', () => {
+  let socialTaskId;
+  test('admin crea tarea social con red y acción', async () => {
+    const r = await request(app).post('/api/admin/tasks')
+      .set(auth(adminToken))
+      .send({ title: 'Síguenos en Instagram', category: 'social', points: 10,
+              social_network: 'instagram', social_action: 'follow',
+              target_url: 'https://instagram.com/sipi' });
+    expect(r.status).toBe(201);
+    expect(r.body.task.social_network).toBe('instagram');
+    expect(r.body.task.social_action).toBe('follow');
+    socialTaskId = r.body.task.id;
+  });
+  test('admin no puede usar una red desconocida', async () => {
+    const r = await request(app).post('/api/admin/tasks')
+      .set(auth(adminToken))
+      .send({ title: 'Red rara', category: 'social', points: 5, social_network: 'myspace' });
+    expect(r.status).toBe(400);
+    expect(r.body.error).toBe('INVALID_SOCIAL_NETWORK');
+  });
+  test('enviar tarea social sin usuario de la red falla', async () => {
+    const r = await request(app).post(`/api/tasks/${socialTaskId}/submit`)
+      .set(auth(userToken)).send({});
+    expect(r.status).toBe(400);
+    expect(r.body.error).toBe('HANDLE_REQUIRED');
+  });
+  test('enviar tarea social con usuario guarda handle y red', async () => {
+    const r = await request(app).post(`/api/tasks/${socialTaskId}/submit`)
+      .set(auth(userToken)).send({ handle: '@alex_ig' });
+    expect(r.status).toBe(201);
+    expect(r.body.completion.handle).toBe('alex_ig');
+    expect(r.body.completion.network).toBe('instagram');
+  });
+  test('el admin ve el usuario de la red en revisiones pendientes', async () => {
+    const r = await request(app).get('/api/admin/completions?status=pending')
+      .set(auth(adminToken));
+    const c = r.body.completions.find((x) => x.id && x.handle === 'alex_ig');
+    expect(c).toBeDefined();
+    expect(c.network).toBe('instagram');
+    expect(c.task_title).toBe('Síguenos en Instagram');
+  });
+  test('tarea social aprobada ya no aparece en el listado del usuario', async () => {
+    const before = await request(app).get('/api/tasks').set(auth(userToken));
+    expect(before.body.tasks.some((t) => t.id === socialTaskId)).toBe(true);
+    const pend = await request(app).get('/api/admin/completions?status=pending').set(auth(adminToken));
+    const c = pend.body.completions.find((x) => x.handle === 'alex_ig');
+    const ap = await request(app).post(`/api/admin/completions/${c.id}/approve`).set(auth(adminToken));
+    expect(ap.status).toBe(200);
+    const after = await request(app).get('/api/tasks').set(auth(userToken));
+    expect(after.body.tasks.some((t) => t.id === socialTaskId)).toBe(false);
+  });
+  test('tarea social aprobada sí aparece para otro usuario', async () => {
+    const t2 = await registerAndLogin('Beto', 'beto@mail.com', 'secret12');
+    const r = await request(app).get('/api/tasks').set(auth(t2));
+    expect(r.body.tasks.some((t) => t.title === 'Síguenos en Instagram')).toBe(true);
+  });
+  test('tarea normal aprobada sigue apareciendo (solo se ocultan las sociales)', async () => {
+    const nt = await request(app).post('/api/admin/tasks').set(auth(adminToken))
+      .send({ title: 'Tarea normal X', category: 'opinion', points: 5 });
+    const tid = nt.body.task.id;
+    await request(app).post(`/api/tasks/${tid}/submit`).set(auth(userToken)).send({});
+    const pend = await request(app).get('/api/admin/completions?status=pending').set(auth(adminToken));
+    const c = pend.body.completions.find((x) => x.task_id === tid);
+    await request(app).post(`/api/admin/completions/${c.id}/approve`).set(auth(adminToken));
+    const list = await request(app).get('/api/tasks').set(auth(userToken));
+    expect(list.body.tasks.some((t) => t.id === tid)).toBe(true);
+  });
+});
