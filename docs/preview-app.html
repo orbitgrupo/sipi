@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sipi — Vista previa de la app</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Inter,sans-serif; background:#0C1526; color:#1B2340;
+         padding:40px; }
+  h1.page { color:#fff; font-size:28px; margin-bottom:6px; }
+  p.page-sub { color:#8A93B2; margin-bottom:32px; font-size:14px; }
+  .row { display:flex; gap:28px; flex-wrap:wrap; }
+  .shot { text-align:center; }
+  .shot .cap { color:#fff; font-weight:700; margin-bottom:12px; font-size:15px; }
+  .shot .cap span { display:block; color:#8A93B2; font-weight:400; font-size:12px; margin-top:2px;}
+  .phone { width:375px; height:812px; background:#F4F6FB; border-radius:44px; overflow:hidden;
+           position:relative; box-shadow:0 30px 80px rgba(0,0,0,.5); border:10px solid #1a1f2e; text-align:left;}
+  .notch { position:absolute; top:12px; left:50%; transform:translateX(-50%); width:120px; height:28px;
+           background:#1a1f2e; border-radius:16px; z-index:50; }
+  .screen { position:absolute; inset:0; overflow:hidden; display:flex; flex-direction:column; }
+  /* ---- welcome ---- */
+  .w-bg { background:linear-gradient(160deg,#2F63F0 0%,#1A3FB8 60%,#16275e 100%); flex:1;
+          display:flex; flex-direction:column; align-items:center; padding:90px 28px 40px; position:relative;}
+  .w-logo { width:92px; height:92px; border-radius:28px; background:#fff;
+            display:flex; align-items:center; justify-content:center; font-size:44px;
+            box-shadow:0 18px 40px rgba(0,0,0,.25); }
+  .w-title { color:#fff; font-size:44px; font-weight:900; margin-top:18px; letter-spacing:-1px;}
+  .w-tag { color:rgba(255,255,255,.85); font-size:16px; margin-top:8px; text-align:center; line-height:1.5;}
+  .w-spacer { flex:1; }
+  .btn-white { background:#fff; color:#2456E6; font-weight:800; font-size:16px; border-radius:16px;
+               padding:16px; text-align:center; width:100%; }
+  .btn-outline { border:2px solid rgba(255,255,255,.7); color:#fff; font-weight:800; font-size:16px;
+                 border-radius:16px; padding:14px; text-align:center; width:100%; margin-top:12px;}
+  .w-waves { position:absolute; bottom:0; left:0; right:0; height:150px; opacity:.25; }
+  /* ---- generic app ---- */
+  .appbar { padding:56px 20px 10px; display:flex; align-items:center; justify-content:space-between; }
+  .appbar .hello { font-size:13px; color:#8A93B2; }
+  .appbar .name { font-size:20px; font-weight:800; }
+  .avatar { width:46px; height:46px; border-radius:16px;
+            background:linear-gradient(135deg,#2F63F0,#1A3FB8); color:#fff; font-weight:900;
+            display:flex; align-items:center; justify-content:center; font-size:20px;}
+  .body { flex:1; overflow:hidden; padding:6px 20px; }
+  .balance { border-radius:24px; padding:22px; color:#fff; margin-top:8px;
+             background:linear-gradient(135deg,#2456E6,#2F63F0); box-shadow:0 14px 30px rgba(36,86,230,.35);}
+  .balance .lbl { font-size:12px; opacity:.85; }
+  .balance .pts { font-size:34px; font-weight:900; margin:4px 0; }
+  .balance .usd { font-size:14px; opacity:.9; }
+  .sect { display:flex; justify-content:space-between; align-items:center; margin:20px 0 12px; }
+  .sect h3 { font-size:16px; font-weight:800; }
+  .sect a { font-size:13px; color:#2456E6; font-weight:700; }
+  .cats { display:flex; gap:12px; }
+  .cat { flex:1; background:#fff; border-radius:18px; padding:14px 4px; text-align:center;
+         box-shadow:0 4px 14px rgba(27,35,64,.06); }
+  .cat .ic { width:44px; height:44px; border-radius:14px; margin:0 auto 8px;
+             display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff;}
+  .cat .t { font-size:11px; font-weight:700; color:#1B2340;}
+  .task { background:#fff; border-radius:18px; padding:14px; display:flex; gap:12px; align-items:center;
+          margin-bottom:10px; box-shadow:0 4px 14px rgba(27,35,64,.06);}
+  .task .ti { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+              font-size:24px; color:#fff; flex-shrink:0;}
+  .task .tt { font-size:14px; font-weight:700; }
+  .task .tp { font-size:12px; color:#8A93B2; margin-top:2px;}
+  .task .go { margin-left:auto; background:#2456E6; color:#fff; font-size:12px; font-weight:800;
+              padding:9px 14px; border-radius:12px; flex-shrink:0;}
+  .tabnav { position:absolute; bottom:0; left:0; right:0; background:#fff; display:flex;
+            padding:10px 6px 26px; border-top:1px solid #E6EAF3; }
+  .tabnav .tb { flex:1; text-align:center; font-size:10px; color:#8A93B2; font-weight:600;}
+  .tabnav .tb .i { font-size:22px; display:block; margin-bottom:2px;}
+  .tabnav .tb.on { color:#2456E6; }
+  .pagetitle { padding:56px 20px 4px; font-size:24px; font-weight:900; }
+  .tabs { display:flex; gap:8px; padding:12px 20px; }
+  .tab { padding:9px 16px; border-radius:20px; font-size:13px; font-weight:700; color:#8A93B2; background:#fff;}
+  .tab.on { background:#2456E6; color:#fff; }
+  .pill { font-size:11px; font-weight:800; padding:5px 11px; border-radius:20px; flex-shrink:0;}
+  .pill.ok { background:rgba(34,181,115,.12); color:#22B573; }
+  .pill.pend { background:rgba(245,166,35,.12); color:#B45309; }
+  .pill.no { background:rgba(229,72,77,.12); color:#E5484D; }
+  .menu { background:#fff; border-radius:16px; padding:6px 16px; margin-bottom:8px;
+          display:flex; align-items:center; gap:12px; box-shadow:0 4px 14px rgba(27,35,64,.05);}
+  .menu .mi { width:40px; height:40px; border-radius:12px; background:#E8EDFD; color:#2456E6;
+              display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;}
+  .menu .ml { font-size:14px; font-weight:600; flex:1; line-height:1.35;}
+  .menu .chev { color:#8A93B2; }
+  .lvl { border-radius:24px; padding:24px; color:#fff; text-align:center; margin-top:8px;
+         background:linear-gradient(135deg,#9D7BFF,#4A2FD6); box-shadow:0 14px 30px rgba(124,92,255,.35);}
+  .lvl .badge { width:72px; height:72px; border-radius:24px; background:rgba(255,255,255,.22); margin:0 auto 10px;
+                display:flex; align-items:center; justify-content:center; font-size:36px;}
+  .bar { height:8px; background:rgba(255,255,255,.25); border-radius:8px; margin-top:14px; overflow:hidden;}
+  .bar i { display:block; height:100%; width:65%; background:#fff; border-radius:8px;}
+  .ach { background:#fff; border-radius:18px; padding:16px 8px; text-align:center; flex:1;
+         box-shadow:0 4px 14px rgba(27,35,64,.06);}
+  .ach .ai { font-size:30px; }
+  .ach .at { font-size:11px; font-weight:700; margin-top:6px;}
+  .ach .ap { font-size:10px; color:#8A93B2; }
+  .ach.lock { opacity:.45; }
+  .amtgrid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin:12px 0;}
+  .amt { background:#fff; border-radius:16px; padding:14px 6px; text-align:center; font-weight:800; font-size:14px;
+         box-shadow:0 4px 14px rgba(27,35,64,.06);}
+  .amt small { display:block; color:#8A93B2; font-weight:600; font-size:11px; margin-top:2px;}
+  .amt.on { background:linear-gradient(135deg,#2F63F0,#1A3FB8); color:#fff; }
+  .amt.on small { color:rgba(255,255,255,.8); }
+  .infobox { background:#FDF1DC; border-radius:16px; padding:14px; display:flex; gap:10px; margin-top:14px;}
+  .infobox .t { font-size:13px; font-weight:800; }
+  .infobox .d { font-size:12px; color:#8A93B2; line-height:1.5; margin-top:4px;}
+  .btn-primary { background:#2456E6; color:#fff; font-weight:800; font-size:16px; border-radius:16px;
+                 padding:16px; text-align:center; margin-top:14px;}
+</style>
+</head>
+<body>
+<h1 class="page">Sipi — Vista previa de la app</h1>
+<p class="page-sub">Maqueta visual basada en el código actual (no son capturas del teléfono). 25 sept 2026.</p>
+<div class="row">
+
+<!-- 1 BIENVENIDA -->
+<div class="shot"><div class="cap">Bienvenida<span>Pantalla 1</span></div>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="w-bg">
+    <div class="w-logo">✨</div>
+    <div class="w-title">Sipi</div>
+    <div class="w-tag">Completa tareas.<br>Gana recompensas.</div>
+    <div class="w-spacer"></div>
+    <div class="btn-white">Crear cuenta</div>
+    <div class="btn-outline">Iniciar sesión</div>
+    <svg class="w-waves" viewBox="0 0 375 150" preserveAspectRatio="none">
+      <path d="M0,70 Q60,40 120,70 T240,70 T360,70 L360,150 L0,150 Z" fill="#ffffff"/>
+      <path d="M0,95 Q60,65 120,95 T240,95 T360,95 L360,150 L0,150 Z" fill="#ffffff" opacity=".6"/>
+    </svg>
+  </div>
+</div></div></div>
+
+<!-- 2 INICIO -->
+<div class="shot"><div class="cap">Inicio<span>Pantalla 4 · Hola, Rick</span></div>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="appbar">
+    <div><div class="hello">Hola de nuevo,</div><div class="name">Rick 👋</div></div>
+    <div class="avatar">R</div>
+  </div>
+  <div class="body">
+    <div class="balance">
+      <div class="lbl">Tu saldo</div>
+      <div class="pts">1,250 pts</div>
+      <div class="usd">≈ $12.50 USD · 50 pts = $1.00</div>
+    </div>
+    <div class="sect"><h3>Categorías</h3></div>
+    <div class="cats">
+      <div class="cat"><div class="ic" style="background:#2456E6">✓</div><div class="t">Tareas</div></div>
+      <div class="cat"><div class="ic" style="background:#7C5CFF">◈</div><div class="t">Encuestas</div></div>
+      <div class="cat"><div class="ic" style="background:#E1306C">♥</div><div class="t">Redes</div></div>
+      <div class="cat"><div class="ic" style="background:#F5A623">★</div><div class="t">Ofertas</div></div>
+      <div class="cat"><div class="ic" style="background:#8A93B2">⋯</div><div class="t">Más</div></div>
+    </div>
+    <div class="sect"><h3>Tareas destacadas</h3><a>Ver todas</a></div>
+    <div class="task"><div class="ti" style="background:#2456E6">📱</div>
+      <div><div class="tt">Probar una app</div><div class="tp">150 pts · 10 min</div></div>
+      <div class="go">Completar</div></div>
+    <div class="task"><div class="ti" style="background:#7C5CFF">📋</div>
+      <div><div class="tt">Encuesta de productos</div><div class="tp">100 pts · 5 min</div></div>
+      <div class="go">Completar</div></div>
+    <div class="task"><div class="ti" style="background:#E1306C">📸</div>
+      <div><div class="tt">Seguir en Instagram</div><div class="tp">50 pts · 2 min</div></div>
+      <div class="go">Completar</div></div>
+  </div>
+  <div class="tabnav">
+    <div class="tb on"><span class="i">🏠</span>Inicio</div>
+    <div class="tb"><span class="i">✓</span>Tareas</div>
+    <div class="tb"><span class="i">💳</span>Canjear</div>
+    <div class="tb"><span class="i">🏆</span>Logros</div>
+    <div class="tb"><span class="i">👤</span>Perfil</div>
+  </div>
+</div></div></div>
+
+<!-- 3 TAREAS -->
+<div class="shot"><div class="cap">Tareas<span>Pantallas 5-6 · con filtros</span></div>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="pagetitle">Tareas</div>
+  <div class="tabs">
+    <div class="tab on">Todas</div><div class="tab">Encuestas</div><div class="tab">Social</div><div class="tab">Promos</div>
+  </div>
+  <div class="body">
+    <div class="task"><div class="ti" style="background:#2456E6">📱</div>
+      <div><div class="tt">Probar una app</div><div class="tp">150 pts · Descarga y úsala 5 min</div></div>
+      <div class="go">Completar</div></div>
+    <div class="task"><div class="ti" style="background:#7C5CFF">📋</div>
+      <div><div class="tt">Opinión sobre bebidas</div><div class="tp">100 pts · Encuesta</div></div>
+      <div class="go">Completar</div></div>
+    <div class="task"><div class="ti" style="background:#22B573">🛒</div>
+      <div><div class="tt">Oferta: 20% en tienda</div><div class="tp">80 pts · Promoción</div></div>
+      <div class="go">Completar</div></div>
+    <div class="task"><div class="ti" style="background:#E1306C">✈️</div>
+      <div><div class="tt">Unirse al canal de Telegram</div><div class="tp">50 pts · Red social</div></div>
+      <div class="go">Completar</div></div>
+    <div class="task"><div class="ti" style="background:#F5A623">🎮</div>
+      <div><div class="tt">Jugar 3 niveles</div><div class="tp">120 pts · 15 min</div></div>
+      <div class="go">Completar</div></div>
+  </div>
+  <div class="tabnav">
+    <div class="tb"><span class="i">🏠</span>Inicio</div>
+    <div class="tb on"><span class="i">✓</span>Tareas</div>
+    <div class="tb"><span class="i">💳</span>Canjear</div>
+    <div class="tb"><span class="i">🏆</span>Logros</div>
+    <div class="tb"><span class="i">👤</span>Perfil</div>
+  </div>
+</div></div></div>
+<!-- 4 CANJEAR -->
+<div class="shot"><div class="cap">Canjear<span>Pantalla 9 · conversión real</span></div>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="pagetitle">Canjear</div>
+  <div class="body">
+    <div class="balance">
+      <div class="lbl">Tu saldo</div>
+      <div class="pts">1,250 pts</div>
+      <div class="usd">≈ $12.50 USD · 50 pts = $1.00</div>
+    </div>
+    <div class="sect"><h3>Monto a canjear</h3></div>
+    <div class="amtgrid">
+      <div class="amt">500<small>$5.00</small></div>
+      <div class="amt on">1000<small>$10.00</small></div>
+      <div class="amt">2500<small>$25.00</small></div>
+    </div>
+    <div class="infobox">
+      <div style="font-size:20px">ℹ️</div>
+      <div><div class="t">Información</div>
+      <div class="d">El tipo de cambio se calcula con la configuración actual. Tu recompensa se enviará al método de pago registrado. El tiempo de procesamiento es de 1 a 3 días hábiles.</div></div>
+    </div>
+    <div class="btn-primary">Solicitar canje</div>
+    <div class="sect"><h3>Historial</h3></div>
+    <div class="task"><div><div class="tt">500 puntos</div><div class="tp">hace 2 días</div></div>
+      <div class="pill ok" style="margin-left:auto">Completado</div></div>
+    <div class="task"><div><div class="tt">1000 puntos</div><div class="tp">ayer</div></div>
+      <div class="pill pend" style="margin-left:auto">Pendiente</div></div>
+  </div>
+  <div class="tabnav">
+    <div class="tb"><span class="i">🏠</span>Inicio</div>
+    <div class="tb"><span class="i">✓</span>Tareas</div>
+    <div class="tb on"><span class="i">💳</span>Canjear</div>
+    <div class="tb"><span class="i">🏆</span>Logros</div>
+    <div class="tb"><span class="i">👤</span>Perfil</div>
+  </div>
+</div></div></div>
+
+<!-- 5 LOGROS -->
+<div class="shot"><div class="cap">Logros<span>Pantalla 10 · nivel y medallas</span></div>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="pagetitle">Logros</div>
+  <div class="body">
+    <div class="lvl">
+      <div class="badge">🏆</div>
+      <div style="font-size:20px;font-weight:900">Nivel 2</div>
+      <div style="font-size:13px;opacity:.9;margin-top:4px">Explorador</div>
+      <div class="bar"><i></i></div>
+      <div style="font-size:12px;margin-top:8px;opacity:.9">650 / 1,000 pts para Nivel 3</div>
+    </div>
+    <div class="sect"><h3>Medallas</h3></div>
+    <div style="display:flex;gap:10px">
+      <div class="ach"><div class="ai">🔥</div><div class="at">Racha 7 días</div><div class="ap">+100 pts</div></div>
+      <div class="ach"><div class="ai">⭐</div><div class="at">Primera tarea</div><div class="ap">+50 pts</div></div>
+      <div class="ach lock"><div class="ai">💎</div><div class="at">10 canjes</div><div class="ap">+200 pts</div></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <div class="ach"><div class="ai">📋</div><div class="at">Encuestador</div><div class="ap">+75 pts</div></div>
+      <div class="ach lock"><div class="ai">👑</div><div class="at">Nivel 5</div><div class="ap">+300 pts</div></div>
+      <div class="ach lock"><div class="ai">🚀</div><div class="at">100 tareas</div><div class="ap">+500 pts</div></div>
+    </div>
+  </div>
+  <div class="tabnav">
+    <div class="tb"><span class="i">🏠</span>Inicio</div>
+    <div class="tb"><span class="i">✓</span>Tareas</div>
+    <div class="tb"><span class="i">💳</span>Canjear</div>
+    <div class="tb on"><span class="i">🏆</span>Logros</div>
+    <div class="tb"><span class="i">👤</span>Perfil</div>
+  </div>
+</div></div></div>
+
+<!-- 6 PERFIL -->
+<div class="shot"><div class="cap">Perfil<span>Pantallas 12-14</span></div>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="pagetitle">Perfil</div>
+  <div class="body">
+    <div style="display:flex;gap:14px;align-items:center;margin:8px 0 18px">
+      <div class="avatar" style="width:64px;height:64px;font-size:26px;border-radius:20px">R</div>
+      <div><div style="font-size:18px;font-weight:800">Rick</div>
+      <div style="font-size:13px;color:#8A93B2">rick@email.com</div></div>
+    </div>
+    <div class="menu"><div class="mi">✏️</div><div class="ml">Editar perfil</div><div class="chev">›</div></div>
+    <div class="menu"><div class="mi">🕘</div><div class="ml">Historial de puntos</div><div class="chev">›</div></div>
+    <div class="menu"><div class="mi">🏆</div><div class="ml">Mis logros</div><div class="chev">›</div></div>
+    <div class="menu"><div class="mi">🔔</div><div class="ml">Notificaciones</div><div class="chev">›</div></div>
+    <div class="menu"><div class="mi">🎧</div><div class="ml">Soporte</div><div class="chev">›</div></div>
+    <div class="menu"><div class="mi">⚙️</div><div class="ml">Configuración</div><div class="chev">›</div></div>
+    <div class="menu"><div class="mi" style="background:#FBE4E5;color:#E5484D">↪</div>
+      <div class="ml" style="color:#E5484D">Cerrar sesión</div></div>
+  </div>
+  <div class="tabnav">
+    <div class="tb"><span class="i">🏠</span>Inicio</div>
+    <div class="tb"><span class="i">✓</span>Tareas</div>
+    <div class="tb"><span class="i">💳</span>Canjear</div>
+    <div class="tb"><span class="i">🏆</span>Logros</div>
+    <div class="tb on"><span class="i">👤</span>Perfil</div>
+  </div>
+</div></div></div>
+
+</div><!-- /row -->
+</body>
+</html>
