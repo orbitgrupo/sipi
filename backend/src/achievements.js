@@ -1,55 +1,139 @@
-// Sipi — motor de logros. Se evalúa después de cada evento que suma
-// actividad (aprobar tarea, responder encuesta, crear canje).
-// Debe llamarse DENTRO de la transacción del caso de uso.
+// Sipi — motor de logros sobre PostgreSQL.
+//
+// Se ejecuta dentro de la misma transacción del caso de uso.
+// Los bonus se registran como movimientos independientes del ledger.
+
 const { addEntry } = require('./ledger');
 
-function metricValue(db, userId, metric) {
+const SCHEMA = 'sipi_dev';
+
+async function metricValue(db, userId, metric) {
+  let sql;
+
   switch (metric) {
     case 'tasks_completed':
-      return db
-        .prepare("SELECT COUNT(*) AS c FROM task_completions WHERE user_id = ? AND status = 'approved'")
-        .get(userId).c;
+      sql = `
+        SELECT COUNT(*)::int AS value
+        FROM ${SCHEMA}.task_completions
+        WHERE user_id = $1
+          AND status = 'approved'
+      `;
+      break;
+
     case 'points_earned':
-      return db
-        .prepare("SELECT COALESCE(SUM(points),0) AS s FROM ledger WHERE user_id = ? AND type IN ('EARN','BONUS')")
-        .get(userId).s;
+      sql = `
+        SELECT COALESCE(SUM(points), 0)::int AS value
+        FROM ${SCHEMA}.ledger
+        WHERE user_id = $1
+          AND type IN ('EARN', 'BONUS')
+      `;
+      break;
+
     case 'surveys_completed':
-      return db.prepare('SELECT COUNT(*) AS c FROM survey_responses WHERE user_id = ?').get(userId).c;
+      sql = `
+        SELECT COUNT(*)::int AS value
+        FROM ${SCHEMA}.survey_responses
+        WHERE user_id = $1
+      `;
+      break;
+
     case 'redemptions':
-      return db.prepare('SELECT COUNT(*) AS c FROM redemptions WHERE user_id = ?').get(userId).c;
+      sql = `
+        SELECT COUNT(*)::int AS value
+        FROM ${SCHEMA}.redemptions
+        WHERE user_id = $1
+      `;
+      break;
+
     default:
       return 0;
   }
+
+  const result = await db.query(sql, [userId]);
+  return result.rows[0].value;
 }
 
-function checkAndAward(db, userId) {
-  const all = db.prepare('SELECT * FROM achievements').all();
-  const earned = new Set(
-    db.prepare('SELECT achievement_id FROM user_achievements WHERE user_id = ?').all(userId)
-      .map((r) => r.achievement_id)
+async function checkAndAward(db, userId) {
+  const achievementsResult = await db.query(
+    `SELECT *
+     FROM ${SCHEMA}.achievements
+     ORDER BY id`
   );
+
+  const earnedResult = await db.query(
+    `SELECT achievement_id
+     FROM ${SCHEMA}.user_achievements
+     WHERE user_id = $1`,
+    [userId]
+  );
+
+  const earned = new Set(
+    earnedResult.rows.map((row) => row.achievement_id)
+  );
+
   const newly = [];
-  for (const a of all) {
-    if (earned.has(a.id)) continue;
-    if (metricValue(db, userId, a.metric) >= a.threshold) {
-      db.prepare('INSERT INTO user_achievements (user_id, achievement_id) VALUES (?, ?)').run(userId, a.id);
-      if (a.bonus_points > 0) {
-        addEntry(db, {
-          userId,
-          type: 'BONUS',
-          points: a.bonus_points,
-          referenceType: 'achievement',
-          referenceId: a.id,
-          note: `Logro desbloqueado: ${a.name}`,
-        });
-      }
-      db.prepare('INSERT INTO notifications (user_id, type, title, body) VALUES (?, ?, ?, ?)').run(
-        userId, 'achievement', '¡Logro desbloqueado!', `${a.name}: +${a.bonus_points} pts`
-      );
-      newly.push(a);
+
+  for (const achievement of achievementsResult.rows) {
+    if (earned.has(achievement.id)) {
+      continue;
     }
+
+    const value = await metricValue(
+      db,
+      userId,
+      achievement.metric
+    );
+
+    if (value < achievement.threshold) {
+      continue;
+    }
+
+    const awardResult = await db.query(
+      `INSERT INTO ${SCHEMA}.user_achievements
+         (user_id, achievement_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, achievement_id) DO NOTHING
+       RETURNING achievement_id`,
+      [userId, achievement.id]
+    );
+
+    // Otro proceso pudo haber otorgado el logro primero.
+    if (!awardResult.rowCount) {
+      continue;
+    }
+
+    if (achievement.bonus_points > 0) {
+      await addEntry(db, {
+        userId,
+        type: 'BONUS',
+        points: achievement.bonus_points,
+        referenceType: 'achievement',
+        referenceId: achievement.id,
+        note: `Logro desbloqueado: ${achievement.name}`,
+        createdBy: null,
+      });
+    }
+
+    await db.query(
+      `INSERT INTO ${SCHEMA}.notifications
+         (user_id, type, title, body)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        userId,
+        'achievement',
+        '¡Logro desbloqueado!',
+        `${achievement.name}: +${achievement.bonus_points} pts`,
+      ]
+    );
+
+    newly.push(achievement);
+    earned.add(achievement.id);
   }
+
   return newly;
 }
 
-module.exports = { checkAndAward, metricValue };
+module.exports = {
+  checkAndAward,
+  metricValue,
+};

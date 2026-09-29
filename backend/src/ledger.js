@@ -1,40 +1,99 @@
-// Sipi — ledger inmutable de puntos.
+// Sipi — ledger inmutable de puntos sobre PostgreSQL.
 //
 // REGLAS DE ORO:
-// 1. El saldo NUNCA se almacena como un campo editable: se deriva de SUM(points).
-// 2. El cliente NUNCA envía montos: el servidor calcula todo.
-// 3. Toda escritura al ledger ocurre dentro de una transacción del caso de uso
-//    (aprobar tarea, canjear, reversar, bonus) para que sea atómica.
+// 1. El saldo se deriva de SUM(points).
+// 2. El cliente nunca determina montos.
+// 3. Toda escritura ocurre dentro de una transacción.
+// 4. Antes de modificar el ledger se bloquea el perfil del usuario
+//    para serializar operaciones concurrentes.
 
-function getBalance(db, userId) {
-  const row = db
-    .prepare('SELECT COALESCE(SUM(points), 0) AS b FROM ledger WHERE user_id = ?')
-    .get(userId);
-  return row.b;
-}
+const SCHEMA = 'sipi_dev';
 
 function httpError(status, message) {
-  const e = new Error(message);
-  e.status = status;
-  return e;
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+async function getBalance(db, userId) {
+  const result = await db.query(
+    `SELECT COALESCE(SUM(points), 0)::int AS b
+       FROM ${SCHEMA}.ledger
+      WHERE user_id = $1`,
+    [userId]
+  );
+
+  return result.rows[0].b;
 }
 
 /**
- * Agrega una entrada al ledger. Debe llamarse dentro de una transacción.
- * Lanza 400 INSUFFICIENT_POINTS si el saldo resultante sería negativo.
+ * Bloquea el perfil durante la transacción actual.
+ *
+ * Esto evita que dos operaciones concurrentes del mismo usuario
+ * calculen el saldo utilizando simultáneamente el mismo estado.
  */
-function addEntry(db, { userId, type, points, referenceType, referenceId, note, createdBy }) {
-  if (!Number.isInteger(points)) throw httpError(400, 'INVALID_POINTS');
-  const balanceAfter = getBalance(db, userId) + points;
-  if (balanceAfter < 0) throw httpError(400, 'INSUFFICIENT_POINTS');
+async function lockUser(db, userId) {
+  const result = await db.query(
+    `SELECT id
+       FROM ${SCHEMA}.profiles
+      WHERE id = $1
+      FOR UPDATE`,
+    [userId]
+  );
+
+  if (result.rowCount === 0) {
+    throw httpError(404, 'USER_NOT_FOUND');
+  }
+}
+
+/**
+ * Agrega una entrada al ledger.
+ *
+ * IMPORTANTE:
+ * debe recibir un client de PostgreSQL que ya esté dentro de
+ * BEGIN/COMMIT. No debe llamarse usando directamente el pool.
+ */
+async function addEntry(
+  db,
+  {
+    userId,
+    type,
+    points,
+    referenceType,
+    referenceId,
+    note,
+    createdBy,
+  }
+) {
+  if (!Number.isInteger(points) || points === 0) {
+    throw httpError(400, 'INVALID_POINTS');
+  }
+
+  await lockUser(db, userId);
+
+  const currentBalance = await getBalance(db, userId);
+  const balanceAfter = currentBalance + points;
+
+  if (balanceAfter < 0) {
+    throw httpError(400, 'INSUFFICIENT_POINTS');
+  }
+
   try {
-    const info = db
-      .prepare(
-        `INSERT INTO ledger
-           (user_id, type, points, balance_after, reference_type, reference_id, note, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
+    const result = await db.query(
+      `INSERT INTO ${SCHEMA}.ledger
+         (
+           user_id,
+           type,
+           points,
+           balance_after,
+           reference_type,
+           reference_id,
+           note,
+           created_by
+         )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, balance_after`,
+      [
         userId,
         type,
         points,
@@ -42,25 +101,51 @@ function addEntry(db, { userId, type, points, referenceType, referenceId, note, 
         referenceType || null,
         referenceId == null ? null : referenceId,
         note || '',
-        createdBy == null ? null : createdBy
-      );
-    return { id: info.lastInsertRowid, balance_after: balanceAfter };
-  } catch (e) {
-    // UNIQUE(reference_type, reference_id, type): idempotencia ante doble acreditación.
-    if (e && /UNIQUE constraint failed/i.test(e.message || '')) {
+        createdBy == null ? null : createdBy,
+      ]
+    );
+
+    return result.rows[0];
+  } catch (error) {
+    // PostgreSQL 23505 = unique_violation.
+    // Protege contra una acreditación duplicada.
+    if (error && error.code === '23505') {
       throw httpError(409, 'DUPLICATE_LEDGER_ENTRY');
     }
-    throw e;
+
+    throw error;
   }
 }
 
-function getMovements(db, userId, limit = 50) {
-  return db
-    .prepare(
-      `SELECT id, type, points, balance_after, reference_type, reference_id, note, created_at
-       FROM ledger WHERE user_id = ? ORDER BY id DESC LIMIT ?`
-    )
-    .all(userId, limit);
+async function getMovements(db, userId, limit = 50) {
+  const safeLimit = Math.min(
+    Math.max(Number.parseInt(limit, 10) || 50, 1),
+    100
+  );
+
+  const result = await db.query(
+    `SELECT
+       id,
+       type,
+       points,
+       balance_after,
+       reference_type,
+       reference_id,
+       note,
+       created_at
+     FROM ${SCHEMA}.ledger
+     WHERE user_id = $1
+     ORDER BY id DESC
+     LIMIT $2`,
+    [userId, safeLimit]
+  );
+
+  return result.rows;
 }
 
-module.exports = { getBalance, addEntry, getMovements, httpError };
+module.exports = {
+  getBalance,
+  addEntry,
+  getMovements,
+  httpError,
+};
