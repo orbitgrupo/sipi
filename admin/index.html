@@ -55,6 +55,26 @@
   .side-brand b{font-size:20px;font-weight:800}
   .side-ver{margin-left:auto;font-size:10px;font-weight:800;color:#8FA0C2;background:#1A2540;
     padding:3px 9px;border-radius:10px;letter-spacing:.03em}
+  .notif-wrap{position:relative;margin-left:8px}
+  .notif-btn{position:relative;width:36px;height:36px;border-radius:12px;border:1px solid #1A2540;
+    background:#1A2540;color:#C2CDE3;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .notif-btn:hover{background:#22315A;color:#fff}
+  .notif-btn svg{width:18px;height:18px}
+  .notif-badge{position:absolute;top:-6px;right:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:11px;
+    background:linear-gradient(135deg,#EF4444,#DC2626);color:#fff;font-size:11px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(239,68,68,.5)}
+  .notif-drop{position:absolute;top:44px;right:0;width:300px;background:#101A33;border:1px solid #22315A;
+    border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,.5);overflow:hidden;z-index:50}
+  .notif-drop h4{margin:0;padding:13px 16px;font-size:13px;color:#fff;border-bottom:1px solid #1A2540}
+  .notif-item{display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;background:none;border:0;
+    border-bottom:1px solid #16223E;color:#C2CDE3;cursor:pointer;text-align:left;font-size:13px;font-weight:600;transition:.15s}
+  .notif-item:last-child{border-bottom:0}
+  .notif-item:hover{background:#18264A;color:#fff}
+  .notif-item .ni-ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .notif-item .ni-ic svg{width:17px;height:17px}
+  .notif-item .ni-n{margin-left:auto;background:#EF4444;color:#fff;font-size:11px;font-weight:800;
+    min-width:22px;height:22px;border-radius:11px;display:flex;align-items:center;justify-content:center;padding:0 6px}
+  .notif-empty{padding:22px 16px;text-align:center;color:#8FA0C2;font-size:13px}
   nav.menu{flex:1;padding:6px 12px;overflow-y:auto}
   .menu a{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:10px;color:#9AA8C7;
     text-decoration:none;font-weight:700;font-size:13.5px;cursor:pointer;margin-bottom:2px;transition:.15s}
@@ -258,7 +278,15 @@
 <!-- ============ APP ============ -->
 <div id="app" class="hidden">
   <aside>
-    <div class="side-brand"><div class="logo-mark">S</div><b>Sipi</b><span class="side-ver">v2.0</span></div>
+    <div class="side-brand"><div class="logo-mark">S</div><b>Sipi</b><span class="side-ver">v2.0</span>
+      <div class="notif-wrap">
+        <button class="notif-btn" id="notifBtn" onclick="toggleNotifs(event)" title="Notificaciones">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-badge hidden" id="notifBadge">0</span>
+        </button>
+        <div class="notif-drop hidden" id="notifDrop"></div>
+      </div>
+    </div>
     <nav class="menu" id="menu"></nav>
     <div class="side-foot">
       <div class="sf-user">
@@ -356,6 +384,7 @@ async function doLogin() {
 }
 function logout(){
   TOKEN=''; localStorage.removeItem('sipi_admin_token');
+  if (notifTimer) { clearInterval(notifTimer); notifTimer = null; }
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login').style.display='flex';
 }
@@ -367,16 +396,54 @@ function enter(){
   document.getElementById('menu').innerHTML = MENU.map(([k,l]) =>
     `<a data-p="${k}" class="${k===PAGE?'active':''}" onclick="go('${k}')">${ICONS[k]}<span>${l}</span></a>`).join('');
   go(PAGE);
+  if (!notifTimer) notifTimer = setInterval(refreshNotifs, 60000);
 }
 function go(p){
   PAGE = p;
   document.querySelectorAll('#menu a').forEach(a => a.classList.toggle('active', a.dataset.p === p));
   ({panel:vPanel, usuarios:vUsuarios, tareas:vTareas, encuestas:vEncuestas, ofertas:vOfertas,
     pagos:vPagos, reportes:vReportes, config:vConfig})[p]();
+  refreshNotifs();
 }
 function pageHead(title, extra){
   return `<div class="page-head"><div><h1>${title}</h1></div><div style="display:flex;gap:10px">${extra||''}</div></div>`;
 }
+
+/* ============ Notificaciones con indicadores ============ */
+let notifTimer = null;
+async function refreshNotifs(){
+  const badge = document.getElementById('notifBadge');
+  const drop = document.getElementById('notifDrop');
+  if (!badge || !TOKEN) return;
+  try {
+    const n = await req('GET','/api/admin/notifications');
+    const total = n.total || 0;
+    badge.textContent = total > 99 ? '99+' : total;
+    badge.classList.toggle('hidden', total === 0);
+    const item = (ic, cls, label, count, onclick) => count > 0 ? `
+      <button class="notif-item" onclick="${onclick}">
+        <span class="ni-ic" style="background:${cls}">${ic}</span>
+        <span>${label}</span><span class="ni-n">${count}</span>
+      </button>` : '';
+    const html = `<h4>Notificaciones</h4>` + (
+      item(ICONS.tareas,'rgba(37,99,235,.18);color:#60A5FA','Tareas por revisar', n.pending_completions, "go('tareas');taskTab='rev';drawTasks();toggleNotifs(null,true)") +
+      item(ICONS.pagos,'rgba(245,158,11,.18);color:#FBBF24','Pagos pendientes', n.pending_redemptions, "go('pagos');toggleNotifs(null,true)") +
+      item(ICONS.usuarios,'rgba(139,92,246,.18);color:#A78BFA','Usuarios por aprobar', n.pending_users, "go('usuarios');toggleNotifs(null,true)")
+      || `<div class="notif-empty">Sin notificaciones pendientes.<br>Todo al día.</div>`);
+    drop.innerHTML = html;
+  } catch(e){ /* sin notificaciones si falla */ }
+}
+function toggleNotifs(e, forceClose){
+  const drop = document.getElementById('notifDrop');
+  if (e) e.stopPropagation();
+  if (forceClose || !drop.classList.contains('hidden')) { drop.classList.add('hidden'); return; }
+  refreshNotifs();
+  drop.classList.remove('hidden');
+}
+document.addEventListener('click', (e) => {
+  const drop = document.getElementById('notifDrop');
+  if (drop && !drop.classList.contains('hidden') && !e.target.closest('.notif-wrap')) drop.classList.add('hidden');
+});
 
 /* ============ Charts (SVG puro, sin dependencias) ============ */
 function areaChart(days, key, color){
@@ -874,6 +941,7 @@ async function vReportes(){
     const top = [...users].sort((a,b) => b.points-a.points).slice(0,5);
     const withPts = users.filter(u => u.points>0).length;
     const conv = s.users ? (withPts/s.users*100) : 0;
+    const days = (act.days || []).slice(-30);
     const stat = (ic, cls, val, label) => `
       <div class="stat"><div class="ic ${cls}">${ic}</div>
         <div><div class="v">${val}</div><div class="l">${label}</div></div></div>`;
@@ -886,7 +954,11 @@ async function vReportes(){
         ${stat(ICONS.reportes,'purple',conv.toFixed(1)+'%','Usuarios con puntos')}
       </div>
       <div class="grid-2">
-        <div class="panel"><h3>Crecimiento de usuarios</h3><div class="sub">Últimos 30 días</div>${areaChart((act.days||[]).slice(-30),'users','#7C3AED')}</div>
+        <div class="panel"><h3>Crecimiento de usuarios</h3><div class="sub">Últimos 30 días · se forma con la actividad</div>${areaChart(days,'users','#7C3AED')}</div>
+        <div class="panel"><h3>Tareas completadas</h3><div class="sub">Últimos 30 días · se forma con la actividad</div>${areaChart(days,'completions','#10B981')}</div>
+      </div>
+      <div class="grid-2">
+        <div class="panel"><h3>Puntos emitidos por día</h3><div class="sub">Últimos 30 días · se forma con la actividad</div>${areaChart(days,'points','#F59E0B')}</div>
         <div class="panel"><h3>Top usuarios por puntos</h3><div class="sub">Saldo actual</div>
           ${top.length ? `<div class="table-wrap" style="box-shadow:none"><table style="min-width:0"><tr><th>#</th><th>Usuario</th><th style="text-align:right">Puntos</th></tr>
             ${top.map((u,i) => `<tr><td><b>${i+1}</b></td>

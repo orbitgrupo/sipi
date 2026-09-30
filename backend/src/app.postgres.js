@@ -883,7 +883,7 @@ function createApp(db) {
 
   app.get('/api/admin/stats', requireAuth, requireAdmin, asyncRoute(async (_req, res) => {
     // Contrato esperado por el panel admin (igual que el backend SQLite).
-    const [users, activeTasks, surveys, completions, redemptions, popular] =
+    const [users, activeTasks, surveys, completions, redemptions, issued, popular] =
       await Promise.all([
         db.query(`SELECT COUNT(*)::int AS total FROM ${SCHEMA}.profiles`),
         db.query(
@@ -934,11 +934,13 @@ function createApp(db) {
   }));
 
   app.get('/api/admin/activity', requireAuth, requireAdmin, asyncRoute(async (_req, res) => {
-    // Últimos 30 días: usuarios nuevos y tareas enviadas por día.
+    // Últimos 30 días: usuarios nuevos, tareas enviadas y puntos emitidos por día.
+    // Los reportes del panel se van formando solos a medida que entra actividad.
     const result = await db.query(
       `SELECT d.day::date AS date,
               COUNT(DISTINCT p.id)::int AS users,
-              COUNT(DISTINCT c.id)::int AS completions
+              COUNT(DISTINCT c.id)::int AS completions,
+              COALESCE(l.pts, 0)::int AS points
          FROM generate_series(
                 CURRENT_DATE - INTERVAL '29 days',
                 CURRENT_DATE,
@@ -949,7 +951,13 @@ function createApp(db) {
          LEFT JOIN ${SCHEMA}.task_completions c
            ON c.submitted_at::date = d.day::date
           AND c.status IN ('approved', 'pending')
-        GROUP BY d.day
+         LEFT JOIN (
+           SELECT created_at::date AS d, SUM(points)::int AS pts
+             FROM ${SCHEMA}.ledger
+            WHERE type = 'EARN'
+            GROUP BY 1
+         ) l ON l.d = d.day::date
+        GROUP BY d.day, l.pts
         ORDER BY d.day`
     );
 
@@ -958,7 +966,34 @@ function createApp(db) {
         date: r.date instanceof Date ? r.date.toISOString().slice(0, 10) : String(r.date).slice(0, 10),
         users: r.users,
         completions: r.completions,
+        points: r.points,
       })),
+    });
+  }));
+
+  app.get('/api/admin/notifications', requireAuth, requireAdmin, asyncRoute(async (_req, res) => {
+    // Contadores para la campana de notificaciones del panel.
+    const [comp, red, usr] = await Promise.all([
+      db.query(
+        `SELECT COUNT(*)::int AS total FROM ${SCHEMA}.task_completions WHERE status = 'pending'`
+      ),
+      db.query(
+        `SELECT COUNT(*)::int AS total FROM ${SCHEMA}.redemptions WHERE status = 'pending'`
+      ),
+      db.query(
+        `SELECT COUNT(*)::int AS total FROM ${SCHEMA}.profiles WHERE approved = false`
+      ),
+    ]);
+
+    const pending_completions = comp.rows[0].total;
+    const pending_redemptions = red.rows[0].total;
+    const pending_users = usr.rows[0].total;
+
+    return res.json({
+      pending_completions,
+      pending_redemptions,
+      pending_users,
+      total: pending_completions + pending_redemptions + pending_users,
     });
   }));
 
