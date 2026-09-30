@@ -882,33 +882,92 @@ function createApp(db) {
   // ─────────────────────────────────────────────
 
   app.get('/api/admin/stats', requireAuth, requireAdmin, asyncRoute(async (_req, res) => {
-    const [users, tasks, completions, redemptions, popular] =
+    // Contrato esperado por el panel admin (igual que el backend SQLite).
+    const [users, activeTasks, surveys, completions, redemptions, popular] =
       await Promise.all([
         db.query(`SELECT COUNT(*)::int AS total FROM ${SCHEMA}.profiles`),
-        db.query(`SELECT COUNT(*)::int AS total FROM ${SCHEMA}.tasks WHERE active = true`),
-        db.query(`SELECT COUNT(*)::int AS total FROM ${SCHEMA}.task_completions`),
         db.query(
-          `SELECT COUNT(*)::int AS total
-             FROM ${SCHEMA}.redemptions
-            WHERE status = 'pending'`
+          `SELECT COUNT(*)::int AS total FROM ${SCHEMA}.tasks WHERE active = true`
         ),
         db.query(
-          `SELECT t.id, t.title, COUNT(c.id)::int AS completions
+          `SELECT COUNT(*)::int AS total
+             FROM ${SCHEMA}.surveys s
+             JOIN ${SCHEMA}.tasks t ON t.id = s.task_id
+            WHERE t.active = true`
+        ),
+        db.query(
+          `SELECT COUNT(*) FILTER (WHERE status = 'pending')::int AS pending,
+                  COUNT(*) FILTER (WHERE status = 'approved')::int AS approved
+             FROM ${SCHEMA}.task_completions`
+        ),
+        db.query(
+          `SELECT COALESCE(SUM(amount_usd), 0)::float AS paid_out
+             FROM ${SCHEMA}.redemptions
+            WHERE status = 'completed'`
+        ),
+        db.query(
+          `SELECT COALESCE(SUM(points), 0)::int AS issued
+             FROM ${SCHEMA}.ledger
+            WHERE type = 'EARN'`
+        ),
+        db.query(
+          `SELECT t.id, t.title, COUNT(c.id)::int AS n
              FROM ${SCHEMA}.tasks t
-             LEFT JOIN ${SCHEMA}.task_completions c ON c.task_id = t.id
+             LEFT JOIN ${SCHEMA}.task_completions c
+               ON c.task_id = t.id AND c.status = 'approved'
             GROUP BY t.id, t.title
-            ORDER BY completions DESC, t.id DESC
-            LIMIT 5`
+            ORDER BY n DESC, t.id DESC
+            LIMIT 4`
         ),
       ]);
 
     return res.json({
       users: users.rows[0].total,
-      active_tasks: tasks.rows[0].total,
-      total_completions: completions.rows[0].total,
-      pending_redemptions: redemptions.rows[0].total,
+      active_tasks: activeTasks.rows[0].total,
+      surveys: surveys.rows[0].total,
+      pending_completions: completions.rows[0].pending,
+      points_issued: issued.rows[0].issued,
+      paid_out_usd: redemptions.rows[0].paid_out,
+      total_completions: completions.rows[0].approved,
       popular_tasks: popular.rows,
     });
+  }));
+
+  app.get('/api/admin/activity', requireAuth, requireAdmin, asyncRoute(async (_req, res) => {
+    // Últimos 30 días: usuarios nuevos y tareas enviadas por día.
+    const result = await db.query(
+      `SELECT d.day::date AS date,
+              COUNT(DISTINCT p.id)::int AS users,
+              COUNT(DISTINCT c.id)::int AS completions
+         FROM generate_series(
+                CURRENT_DATE - INTERVAL '29 days',
+                CURRENT_DATE,
+                INTERVAL '1 day'
+              ) AS d(day)
+         LEFT JOIN ${SCHEMA}.profiles p
+           ON p.created_at::date = d.day::date
+         LEFT JOIN ${SCHEMA}.task_completions c
+           ON c.submitted_at::date = d.day::date
+          AND c.status IN ('approved', 'pending')
+        GROUP BY d.day
+        ORDER BY d.day`
+    );
+
+    return res.json({
+      days: result.rows.map((r) => ({
+        date: r.date instanceof Date ? r.date.toISOString().slice(0, 10) : String(r.date).slice(0, 10),
+        users: r.users,
+        completions: r.completions,
+      })),
+    });
+  }));
+
+  app.get('/api/admin/tasks', requireAuth, requireAdmin, asyncRoute(async (_req, res) => {
+    const result = await db.query(
+      `SELECT * FROM ${SCHEMA}.tasks ORDER BY id DESC`
+    );
+
+    return res.json({ tasks: result.rows });
   }));
 
   app.get('/api/admin/users', requireAuth, requireAdmin, asyncRoute(async (_req, res) => {

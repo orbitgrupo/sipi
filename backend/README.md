@@ -1,19 +1,26 @@
 # Sipi — Backend API
 
 API REST de la plataforma Sipi (recompensas por tareas).
-**Node.js + Express + SQLite** con `node:sqlite` (módulo integrado, sin
-compilación nativa). Auth con JWT + bcrypt.
+
+- **Producción (Dokploy):** Node.js + Express + **PostgreSQL (Supabase)** con
+  Supabase Auth. Punto de entrada: `src/server.js` → `src/app.postgres.js`.
+- **Legado local:** Node.js + Express + SQLite con `node:sqlite`
+  (`src/app.js`, `src/db.js`, `src/seed.js`). No se usa en producción.
 
 ## Arranque
 
 ```bash
 npm install
-npm run seed   # crea admin@sipi.app / admin123 + 8 tareas + 1 encuesta de ejemplo
-npm start      # http://localhost:3000
+npm run seed:pg  # PostgreSQL: crea 1 tarea por cada tipo (6) + encuesta de ejemplo
+npm start        # http://localhost:3000 (usa app.postgres.js)
 ```
 
+`npm run seed:pg` usa las mismas variables de entorno que el backend
+(`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, opcional `DB_SCHEMA`).
+Es idempotente: no duplica tareas que ya existan por título.
+
 Variables de entorno: `PORT` (3000), `JWT_SECRET` (¡definir en producción!),
-`DB_PATH` (por defecto `data/sipi.db`).
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` según el módulo.
 
 ## Estructura
 
