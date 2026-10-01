@@ -1678,7 +1678,6 @@ function createApp(db) {
     const result = await withSupportTables(db, () => db.query(
       `SELECT t.*,
               p.name AS user_name,
-              p.email AS user_email,
               (SELECT m.body FROM ${SCHEMA}.support_messages m
                 WHERE m.thread_id = t.id ORDER BY m.id DESC LIMIT 1) AS last_message,
               (SELECT COUNT(*)::int FROM ${SCHEMA}.support_messages m
@@ -1688,22 +1687,28 @@ function createApp(db) {
         ORDER BY t.unread_admin DESC, t.updated_at DESC`
     ));
 
-    return res.json({
-      threads: result.rows.map((t) => ({
+    const threads = [];
+
+    for (const t of result.rows) {
+      const authUser = await getAuthUser(t.user_id);
+
+      threads.push({
         ...serializeThread(t),
         user_name: t.user_name || 'Usuario',
-        user_email: t.user_email || '',
+        user_email: authUser?.email || '',
         last_message: t.last_message || '',
         message_count: t.message_count || 0,
-      })),
-    });
+      });
+    }
+
+    return res.json({ threads });
   }));
 
   app.get('/api/admin/support/threads/:id', requireAuth, requireAdmin, asyncRoute(async (req, res) => {
     const threadId = asInt(req.params.id);
 
     const t = await withSupportTables(db, () => db.query(
-      `SELECT t.*, p.name AS user_name, p.email AS user_email
+      `SELECT t.*, p.name AS user_name
          FROM ${SCHEMA}.support_threads t
          LEFT JOIN ${SCHEMA}.profiles p ON p.id = t.user_id
         WHERE t.id = $1`,
@@ -1724,11 +1729,13 @@ function createApp(db) {
       [threadId]
     );
 
+    const authUser = await getAuthUser(t.rows[0].user_id);
+
     return res.json({
       thread: {
         ...serializeThread(t.rows[0]),
         user_name: t.rows[0].user_name || 'Usuario',
-        user_email: t.rows[0].user_email || '',
+        user_email: authUser?.email || '',
       },
       messages: msgs.rows.map(serializeSupportMessage),
     });
