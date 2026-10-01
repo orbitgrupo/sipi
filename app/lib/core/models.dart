@@ -256,13 +256,15 @@ class SipiNotification {
   final String body;
   final bool read;
   final String createdAt;
+  final int referenceId;
   SipiNotification(
       {required this.id,
       required this.type,
       required this.title,
       required this.body,
       required this.read,
-      required this.createdAt});
+      required this.createdAt,
+      this.referenceId = 0});
   factory SipiNotification.fromJson(Map<String, dynamic> j) => SipiNotification(
         id: asInt(j['id']),
         type: j['type'] ?? '',
@@ -270,6 +272,7 @@ class SipiNotification {
         body: j['body'] ?? '',
         read: asBool(j['is_read']),
         createdAt: j['created_at'] ?? '',
+        referenceId: asInt(j['reference_id']),
       );
 }
 

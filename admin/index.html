@@ -251,6 +251,7 @@
   .msg.mine .bubble{background:linear-gradient(135deg,var(--primary),#7C5CFF);color:#fff;border:0;border-radius:14px 14px 4px 14px}
   .msg .mtime{font-size:11px;color:var(--muted);margin-top:3px}
   .msg .mwho{font-size:11px;font-weight:700;color:var(--primary);margin-bottom:2px}
+  .sysmsg{max-width:85%;margin:10px auto;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--primary) 8%,transparent);border:1px solid color-mix(in srgb,var(--primary) 25%,transparent);font-size:12.5px;line-height:1.5;color:var(--text);text-align:center}
   .msg.mine .mtime{text-align:right}
   .sup-reply{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--border)}
   .sup-reply .in{flex:1}
@@ -1059,10 +1060,12 @@ async function payAction(id, action){
 }
 
 /* ============ SOPORTE ============ */
-let supportCache = [], supportOpenId = null, supportFilter = 'open', supportTimer = null;
+let supportCache = [], supportOpenId = null, supportFilter = 'open', supportTimer = null, supportPoll = null, supportLastMsgId = 0;
 const KIND_LABEL = {pregunta:'Pregunta', queja:'Queja', sugerencia:'Sugerencia'};
+function stopSupportPoll(){ if (supportPoll) { clearInterval(supportPoll); supportPoll = null; } }
 async function vSoporte(){
   if (supportTimer) { clearInterval(supportTimer); supportTimer = null; }
+  stopSupportPoll();
   supportOpenId = null;
   const v = document.getElementById('view');
   v.innerHTML = `<div class="loading">Cargando…</div>`;
@@ -1070,7 +1073,7 @@ async function vSoporte(){
     const {threads} = await req('GET','/api/admin/support/threads');
     supportCache = threads;
     v.innerHTML = `
-      ${pageHead('Soporte', `<select class="in" id="supFilter" onchange="supportFilter=this.value;supportOpenId=null;drawSupport()" style="max-width:180px">
+      ${pageHead('Soporte', `<select class="in" id="supFilter" onchange="supportFilter=this.value;supportOpenId=null;stopSupportPoll();drawSupport()" style="max-width:180px">
         <option value="open">Abiertos</option><option value="closed">Cerrados</option><option value="">Todos</option></select>`)}
       <div class="sup-layout">
         <div class="sup-list">
@@ -1107,8 +1110,47 @@ function drawSupport(){
     </button>`).join('')
     : `<div class="empty">Sin conversaciones.</div>`;
 }
+function supportMsgHtml(m){
+  if (m.sender === 'system')
+    return `<div class="sysmsg">${h(m.body)}</div>`;
+  return `<div class="msg ${m.sender==='admin'?'mine':''}">${m.sender==='admin'&&m.sender_name?`<div class="mwho">${h(m.sender_name)}</div>`:''}<div class="bubble">${h(m.body)}</div>
+    <div class="mtime">${fmtTime(m.created_at)}</div></div>`;
+}
+function renderSupportMessages(messages){
+  const box = document.getElementById('supMsgs');
+  if (box) box.innerHTML = messages.map(supportMsgHtml).join('') || '<div class="empty">Sin mensajes.</div>';
+}
+// Chat en vivo: trae mensajes nuevos cada 4 s sin tocar lo que escribes.
+async function pollSupportThread(id){
+  if (PAGE !== 'soporte' || supportOpenId !== id) return;
+  try {
+    const {thread, messages} = await req('GET',`/api/admin/support/threads/${id}`);
+    const box = document.getElementById('supMsgs');
+    if (!box) return;
+    const maxId = messages.length ? Math.max(...messages.map(m => m.id)) : 0;
+    const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    const pill = document.getElementById('supStatusPill');
+    if (pill && pill.dataset.status !== thread.status) {
+      pill.dataset.status = thread.status;
+      pill.className = `pill ${thread.status==='open'?'ok':'bad'}`;
+      pill.textContent = thread.status==='open'?'Abierto':'Cerrado';
+      const tgl = document.getElementById('supToggle');
+      if (tgl) {
+        tgl.className = `btn ${thread.status==='open'?'ghost':'ok'} sm`;
+        tgl.textContent = thread.status==='open'?'Cerrar caso':'Reabrir';
+        tgl.setAttribute('onclick', `toggleSupportStatus(${id},'${thread.status}')`);
+      }
+    }
+    if (maxId !== supportLastMsgId) {
+      supportLastMsgId = maxId;
+      renderSupportMessages(messages);
+      if (nearBottom) box.scrollTop = box.scrollHeight;
+    }
+  } catch(e){ /* reintenta en el próximo ciclo */ }
+}
 async function openSupportThread(id, silent){
   supportOpenId = id;
+  stopSupportPoll();
   drawSupport();
   const chat = document.getElementById('supChat');
   if (!silent) chat.innerHTML = `<div class="loading">Cargando…</div>`;
@@ -1118,19 +1160,20 @@ async function openSupportThread(id, silent){
     if (t) t.unread_admin = false;
     chat.innerHTML = `
       <div class="sup-chead">
-        <div><div class="cell-main">${h(thread.user_name)} <span class="pill ${thread.status==='open'?'ok':'bad'}">${thread.status==='open'?'Abierto':'Cerrado'}</span></div>
+        <div><div class="cell-main">${h(thread.user_name)} <span class="pill ${thread.status==='open'?'ok':'bad'}" id="supStatusPill" data-status="${thread.status}">${thread.status==='open'?'Abierto':'Cerrado'}</span></div>
         <div class="cell-sub">${h(thread.user_email)} · ${KIND_LABEL[thread.kind]||thread.kind} · ${h(thread.subject)}</div></div>
-        <button class="btn ${thread.status==='open'?'ghost':'ok'} sm" onclick="toggleSupportStatus(${id},'${thread.status}')">${thread.status==='open'?'Cerrar caso':'Reabrir'}</button>
+        <button class="btn ${thread.status==='open'?'ghost':'ok'} sm" id="supToggle" onclick="toggleSupportStatus(${id},'${thread.status}')">${thread.status==='open'?'Cerrar caso':'Reabrir'}</button>
       </div>
-      <div class="sup-msgs" id="supMsgs">${messages.map(m => `
-        <div class="msg ${m.sender==='admin'?'mine':''}">${m.sender==='admin'&&m.sender_name?`<div class="mwho">${h(m.sender_name)}</div>`:''}<div class="bubble">${h(m.body)}</div>
-          <div class="mtime">${fmtTime(m.created_at)}</div></div>`).join('') || '<div class="empty">Sin mensajes.</div>'}</div>
+      <div class="sup-msgs" id="supMsgs"></div>
       <div class="sup-reply">
         <input class="in" id="supInput" placeholder="Escribe tu respuesta…" onkeydown="if(event.key==='Enter')sendSupportReply(${id})">
         <button class="btn primary" onclick="sendSupportReply(${id})">Enviar</button>
       </div>`;
+    supportLastMsgId = messages.length ? Math.max(...messages.map(m => m.id)) : 0;
+    renderSupportMessages(messages);
     const box = document.getElementById('supMsgs');
     box.scrollTop = box.scrollHeight;
+    supportPoll = setInterval(() => pollSupportThread(id), 4000);
     refreshNotifs();
   } catch(e){ chat.innerHTML = `<p class="error">Error: ${h(friendlyErr(e))}</p>`; }
 }

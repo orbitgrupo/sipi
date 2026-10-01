@@ -52,6 +52,13 @@ async function ensureSupportTables(db) {
   await db.query(`CREATE INDEX IF NOT EXISTS idx_support_messages_thread ON ${SCHEMA}.support_messages(thread_id)`);
   // Por si las tablas ya existían sin la columna (creadas a mano):
   await db.query(`ALTER TABLE ${SCHEMA}.support_messages ADD COLUMN IF NOT EXISTS sender_name TEXT NOT NULL DEFAULT ''`);
+  // Columnas para enlazar notificaciones con el chat (deep-link en la app).
+  try {
+    await db.query(`ALTER TABLE ${SCHEMA}.notifications ADD COLUMN IF NOT EXISTS reference_type TEXT NOT NULL DEFAULT ''`);
+    await db.query(`ALTER TABLE ${SCHEMA}.notifications ADD COLUMN IF NOT EXISTS reference_id BIGINT`);
+  } catch (e) {
+    console.error('[sipi] No se pudieron agregar columnas a notifications:', e.message);
+  }
 }
 
 function serializeThread(t) {
@@ -90,6 +97,71 @@ async function withSupportTables(db, fn) {
       return await fn();
     }
     throw e;
+  }
+}
+
+// Notificación in-app al usuario. Intenta enlazarla al chat (deep-link);
+// si las columnas de referencia no existen, guarda la notificación igual.
+async function notifyUser(db, n) {
+  try {
+    await db.query(
+      `INSERT INTO ${SCHEMA}.notifications (user_id, type, title, body, reference_type, reference_id)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [n.userId, n.type, n.title, n.body, n.refType || '', n.refId ?? null]
+    );
+  } catch (e) {
+    if (e && e.code === '42703') {
+      await db.query(
+        `INSERT INTO ${SCHEMA}.notifications (user_id, type, title, body)
+         VALUES ($1, $2, $3, $4)`,
+        [n.userId, n.type, n.title, n.body]
+      );
+      return;
+    }
+    throw e;
+  }
+}
+
+const SUPPORT_FAREWELL =
+  '¡Gracias por conversar con nosotros! Esta conversación se cerró automáticamente por inactividad, pero queda guardada en tu historial. Si necesitas más ayuda, abre una nueva consulta cuando quieras. ¡Que tengas un excelente día!';
+
+// Cierra los chats abiertos sin mensajes nuevos en 2 minutos: los archiva
+// (status closed), deja una despedida del sistema y notifica al usuario.
+async function closeInactiveSupportThreads(db) {
+  let stale;
+
+  try {
+    stale = await db.query(
+      `UPDATE ${SCHEMA}.support_threads
+          SET status = 'closed', updated_at = now()
+        WHERE status = 'open'
+          AND updated_at < now() - interval '2 minutes'
+        RETURNING id, user_id`
+    );
+  } catch (e) {
+    if (e && e.code === '42P01') return; // tablas aún no creadas
+    console.error('[sipi] auto-cierre de soporte:', e.message);
+    return;
+  }
+
+  for (const t of stale.rows) {
+    try {
+      await db.query(
+        `INSERT INTO ${SCHEMA}.support_messages (thread_id, sender, sender_name, body)
+         VALUES ($1, 'system', '', $2)`,
+        [t.id, SUPPORT_FAREWELL]
+      );
+      await notifyUser(db, {
+        userId: t.user_id,
+        type: 'support',
+        title: 'Chat de soporte cerrado',
+        body: 'La conversación se cerró por inactividad. Tu historial queda guardado y puedes abrir una nueva consulta cuando quieras.',
+        refType: 'support_thread',
+        refId: Number(t.id),
+      });
+    } catch (e) {
+      console.error('[sipi] auto-cierre de soporte (mensaje):', e.message);
+    }
   }
 }
 
@@ -208,6 +280,10 @@ function createApp(db) {
   ensureSupportTables(db).catch((e) =>
     console.error('[sipi] No se pudieron crear las tablas de soporte:', e.message)
   );
+
+  // Auto-cierre de chats de soporte por inactividad (2 min): revisa cada 30 s.
+  setInterval(() => closeInactiveSupportThreads(db), 30 * 1000);
+  closeInactiveSupportThreads(db);
 
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' }));
@@ -935,6 +1011,15 @@ function createApp(db) {
 
       return t.rows[0];
     }));
+
+    await notifyUser(db, {
+      userId: req.user.id,
+      type: 'support',
+      title: 'Chat abierto con soporte',
+      body: 'Recibimos tu mensaje. Te avisaremos aquí mismo cuando el equipo de soporte te responda.',
+      refType: 'support_thread',
+      refId: Number(thread.id),
+    });
 
     return res.status(201).json({ thread: serializeThread(thread) });
   }));
@@ -1754,13 +1839,15 @@ function createApp(db) {
     }
 
     const t = await withSupportTables(db, () => db.query(
-      `SELECT id FROM ${SCHEMA}.support_threads WHERE id = $1`,
+      `SELECT id, user_id FROM ${SCHEMA}.support_threads WHERE id = $1`,
       [threadId]
     ));
 
     if (!t.rowCount) {
       throw httpError(404, 'THREAD_NOT_FOUND');
     }
+
+    const threadUserId = t.rows[0].user_id;
 
     const m = await withSupportTables(db, async () => {
       const prof = await db.query(
@@ -1784,6 +1871,17 @@ function createApp(db) {
         WHERE id = $1`,
       [threadId]
     );
+
+    const adminName = m.rows[0].sender_name || 'Soporte';
+
+    await notifyUser(db, {
+      userId: threadUserId,
+      type: 'support',
+      title: 'Soporte te respondió',
+      body: `${adminName}: ${message.length > 90 ? message.slice(0, 90) + '…' : message}`,
+      refType: 'support_thread',
+      refId: threadId,
+    });
 
     return res.status(201).json({ message: serializeSupportMessage(m.rows[0]) });
   }));

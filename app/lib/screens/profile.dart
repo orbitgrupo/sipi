@@ -1,5 +1,6 @@
 // Sipi — Perfil, Notificaciones, Soporte, Configuración, Más y pantalla final
 // (pantallas 12-17 del mockup).
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/theme.dart';
@@ -708,6 +709,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.payments_outlined;
       case 'achievement':
         return Icons.emoji_events_outlined;
+      case 'support':
+        return Icons.support_agent;
       default:
         return Icons.notifications_outlined;
     }
@@ -744,7 +747,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         subtitle: Text(n.body,
                             style: const TextStyle(
                                 color: SipiColors.muted, fontSize: 13)),
-                        onTap: () {
+                        onTap: () async {
                           widget.session.api.markNotificationRead(n.id);
                           setState(() => _items[i] = SipiNotification(
                               id: n.id,
@@ -752,7 +755,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               title: n.title,
                               body: n.body,
                               read: true,
-                              createdAt: n.createdAt));
+                              createdAt: n.createdAt,
+                              referenceId: n.referenceId));
+                          if (n.type == 'support' &&
+                              n.referenceId > 0 &&
+                              mounted) {
+                            await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => SupportChatScreen(
+                                        session: widget.session,
+                                        threadId: n.referenceId,
+                                        subject: '')));
+                            _load();
+                          }
                         },
                       ),
                     );
@@ -774,6 +790,7 @@ class SupportScreen extends StatefulWidget {
 class _SupportScreenState extends State<SupportScreen> {
   List<Map<String, dynamic>> _threads = [];
   bool _loading = true;
+  String _filter = 'all'; // all | open | closed
 
   @override
   void initState() {
@@ -868,13 +885,40 @@ class _SupportScreenState extends State<SupportScreen> {
             if (_loading)
               const Center(child: CircularProgressIndicator())
             else if (widget.session.canInteract && _threads.isNotEmpty) ...[
-              const Text('Mis conversaciones',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                      color: SipiColors.text)),
+              Row(
+                children: [
+                  const Text('Mis conversaciones',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: SipiColors.text)),
+                  const Spacer(),
+                  DropdownButton<String>(
+                    value: _filter,
+                    underline: const SizedBox(),
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: SipiColors.primary),
+                    items: const [
+                      DropdownMenuItem(
+                          value: 'all', child: Text('Todas')),
+                      DropdownMenuItem(
+                          value: 'open', child: Text('Abiertas')),
+                      DropdownMenuItem(
+                          value: 'closed', child: Text('Archivadas')),
+                    ],
+                    onChanged: (v) =>
+                        setState(() => _filter = v ?? 'all'),
+                  ),
+                ],
+              ),
               const SizedBox(height: 10),
-              ..._threads.map((t) => Card(
+              ..._threads
+                  .where((t) =>
+                      _filter == 'all' ||
+                      (t['status'] as String? ?? 'open') == _filter)
+                  .map((t) => Card(
                     elevation: 0,
                     margin: const EdgeInsets.only(bottom: 10),
                     shape: RoundedRectangleBorder(
@@ -1079,18 +1123,51 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   bool _sending = false;
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  Timer? _poll;
 
   @override
   void initState() {
     super.initState();
     _load();
+    // Chat en vivo: revisa mensajes nuevos cada 4 segundos.
+    _poll = Timer.periodic(const Duration(seconds: 4), (_) => _liveRefresh());
   }
 
   @override
   void dispose() {
+    _poll?.cancel();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  int _lastMsgId(List<Map<String, dynamic>> msgs) => msgs.isEmpty
+      ? 0
+      : msgs
+          .map((m) => (m['id'] as num?)?.toInt() ?? 0)
+          .reduce((a, b) => a > b ? a : b);
+
+  // Trae mensajes nuevos sin molestar: solo baja al final si hay algo nuevo.
+  Future<void> _liveRefresh() async {
+    if (!mounted || _sending || _loading) return;
+    try {
+      final d = await widget.session.api.supportThread(widget.threadId);
+      if (!mounted) return;
+      final msgs = ((d['messages'] as List?) ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      final status = (d['thread'] as Map?)?['status'] as String? ?? 'open';
+      final newLast = _lastMsgId(msgs);
+      final oldLast = _lastMsgId(_messages);
+      if (newLast != oldLast || status != _status) {
+        final hadNew = newLast > oldLast;
+        setState(() {
+          _messages = msgs;
+          _status = status;
+        });
+        if (hadNew) _toBottom();
+      }
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -1201,6 +1278,30 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                             itemCount: _messages.length,
                             itemBuilder: (_, i) {
                               final m = _messages[i];
+                              if (m['sender'] == 'system') {
+                                return Container(
+                                  width: double.infinity,
+                                  margin: const EdgeInsets.symmetric(
+                                      vertical: 8),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: SipiColors.primary
+                                        .withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: SipiColors.primary
+                                            .withValues(alpha: 0.25)),
+                                  ),
+                                  child: Text(
+                                    (m['body'] as String?) ?? '',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        height: 1.5,
+                                        color: SipiColors.text),
+                                  ),
+                                );
+                              }
                               final mine = m['sender'] == 'user';
                               final adminName =
                                   ((m['sender_name'] as String?) ?? '').trim();
