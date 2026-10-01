@@ -81,6 +81,7 @@ class Task {
   final String? socialNetwork;
   final String? socialAction;
   final String? myStatus;
+  final String imageUrl;
   Task({
     required this.id,
     required this.title,
@@ -95,6 +96,7 @@ class Task {
     this.socialNetwork,
     this.socialAction,
     this.myStatus,
+    this.imageUrl = '',
   });
   factory Task.fromJson(Map<String, dynamic> j) => Task(
         id: asInt(j['id']),
@@ -110,6 +112,7 @@ class Task {
         socialNetwork: j['social_network'],
         socialAction: j['social_action'],
         myStatus: j['my_status'],
+        imageUrl: j['image_url'] ?? '',
       );
   bool get isSocial => socialNetwork != null && socialNetwork!.isNotEmpty;
 }

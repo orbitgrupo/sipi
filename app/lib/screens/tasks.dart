@@ -61,7 +61,21 @@ class _TasksScreenState extends State<TasksScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tareas')),
+      appBar: AppBar(
+        title: const Text('Tareas'),
+        actions: [
+          if (widget.session.canInteract)
+            IconButton(
+              tooltip: 'Historial',
+              icon: const Icon(Icons.history),
+              onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          TaskHistoryScreen(session: widget.session))),
+            ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -144,6 +158,108 @@ class _TasksScreenState extends State<TasksScreen> {
     }
     _load();
     widget.session.refreshBalance();
+  }
+}
+
+/// Historial de tareas completadas (aprobadas) por el usuario.
+/// Las tareas completadas ya no aparecen en el inicio ni en la lista.
+class TaskHistoryScreen extends StatefulWidget {
+  final Session session;
+  const TaskHistoryScreen({super.key, required this.session});
+  @override
+  State<TaskHistoryScreen> createState() => _TaskHistoryScreenState();
+}
+
+class _TaskHistoryScreenState extends State<TaskHistoryScreen> {
+  List<Map<String, dynamic>> _items = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final items = await widget.session.api.taskHistory();
+      if (mounted) {
+        setState(() {
+          _items = items;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String _fmtDate(String? iso) {
+    if (iso == null || iso.isEmpty) return '';
+    final d = DateTime.tryParse(iso);
+    if (d == null) return '';
+    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Historial de tareas')),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _items.isEmpty
+              ? const EmptyState(
+                  icon: Icons.history,
+                  message: 'Aún no completas tareas.\n¡Tus logros aparecerán aquí!')
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _items.length,
+                    itemBuilder: (_, i) {
+                      final t = _items[i];
+                      final task = Task.fromJson(t);
+                      final points = asInt(t['points']);
+                      return Card(
+                        elevation: 0,
+                        margin: const EdgeInsets.only(bottom: 10),
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(SipiRadii.lg),
+                            side:
+                                const BorderSide(color: SipiColors.border)),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          leading: TaskThumb(task: task),
+                          title: Text(task.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700, fontSize: 14)),
+                          subtitle: Text(
+                              'Completada el ${_fmtDate(t['completed_at'] as String?)}',
+                              style: const TextStyle(
+                                  fontSize: 12, color: SipiColors.muted)),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                                color: SipiColors.success
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(20)),
+                            child: Text('+$points',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    color: SipiColors.success,
+                                    fontSize: 13)),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+    );
   }
 }
 

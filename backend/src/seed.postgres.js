@@ -69,6 +69,9 @@ async function main() {
     console.warn('[seed:pg] No hay perfil administrador; las tareas se crearán sin creador.');
   }
 
+  // Columna de imagen (por si el seed corre antes que el arranque del API).
+  await db.query(`ALTER TABLE ${SCHEMA}.tasks ADD COLUMN IF NOT EXISTS image_url TEXT NOT NULL DEFAULT ''`);
+
   for (const t of TASKS) {
     const exists = await db.query(
       `SELECT id FROM ${SCHEMA}.tasks WHERE title = $1`,
@@ -90,6 +93,15 @@ async function main() {
       ]
     );
     console.log(`[seed:pg] creada: ${t.title} (${t.category})`);
+  }
+
+  // Las tareas de redes sociales sin imagen usan el logo de su red.
+  const publicBase = process.env.PUBLIC_BASE_URL || 'https://api-sipi-dev.catalina.my';
+  for (const net of ['instagram', 'tiktok', 'facebook', 'x', 'youtube']) {
+    await db.query(
+      `UPDATE ${SCHEMA}.tasks SET image_url = $1 WHERE social_network = $2 AND (image_url IS NULL OR image_url = '')`,
+      [`${publicBase}/public/task-icons/${net}.png`, net]
+    );
   }
 
   const surveyTask = await db.query(

@@ -178,6 +178,15 @@
   .row-actions{display:flex;gap:4px;align-items:center;justify-content:flex-end}
 
   label.f{display:block;font-size:12.5px;font-weight:800;margin:14px 0 6px}
+  .imgpick{display:flex;gap:8px;flex-wrap:wrap}
+  .imgpick-it{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border:2px solid var(--border);border-radius:12px;background:#fff;cursor:pointer;min-width:64px}
+  .imgpick-it img{width:40px;height:40px;border-radius:10px;object-fit:cover}
+  .imgpick-it span{font-size:10.5px;font-weight:700;color:var(--muted)}
+  .imgpick-it.sel{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.13)}
+  .imgpick-none{width:40px;height:40px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px}
+  .imgpick-custom{display:flex;gap:10px;align-items:center;margin-top:8px}
+  .imgpick-custom .in{flex:1}
+  .imgprev{width:44px;height:44px;border-radius:10px;object-fit:cover;display:none;border:1px solid var(--border)}
   input.in,select.in,textarea.in{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;
     font-size:13.5px;font-family:inherit;background:#fff;color:var(--text);transition:.15s}
   input.in:focus,select.in:focus,textarea.in:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.13)}
@@ -721,9 +730,41 @@ async function delTask(id){
     if (PAGE==='tareas') drawTaskRows(); else if (PAGE==='ofertas') drawOfferRows(); }
   catch(e){ toast('Error: '+friendlyErr(e), true); }
 }
+/* ---- Imágenes de tareas (logos) ---- */
+const TASK_ICONS = [
+  {id:'instagram', label:'Instagram'},
+  {id:'tiktok', label:'TikTok'},
+  {id:'facebook', label:'Facebook'},
+  {id:'x', label:'X'},
+  {id:'youtube', label:'YouTube'},
+];
+const taskIconUrl = id => `${API}/public/task-icons/${id}.png`;
+let taskImgSel = '';
+function drawImgPick(){
+  const el = document.getElementById('f_imgpick');
+  if (!el) return;
+  el.innerHTML =
+    `<button type="button" class="imgpick-it ${!taskImgSel?'sel':''}" onclick="pickTaskImg('')" title="Sin imagen"><span class="imgpick-none">—</span><span>Ninguna</span></button>` +
+    TASK_ICONS.map(ic => {
+      const u = taskIconUrl(ic.id);
+      return `<button type="button" class="imgpick-it ${taskImgSel===u?'sel':''}" onclick="pickTaskImg('${u}')" title="${ic.label}"><img src="${u}" alt="${ic.label}" loading="lazy"><span>${ic.label}</span></button>`;
+    }).join('');
+  const prev = document.getElementById('f_imgprev');
+  if (prev) {
+    if (taskImgSel) { prev.src = taskImgSel; prev.style.display = 'block'; }
+    else { prev.removeAttribute('src'); prev.style.display = 'none'; }
+  }
+}
+function pickTaskImg(u){
+  taskImgSel = u;
+  const inp = document.getElementById('f_imgurl');
+  if (inp) inp.value = '';
+  drawImgPick();
+}
 function taskModal(id, presetCat){
   const t = id ? tasksCache.find(t => t.id===id) || {} : {};
   const defCat = t.category || presetCat || 'social';
+  taskImgSel = t.image_url || '';
   openModal(`
     <h3>${id?'Editar tarea':'Crear tarea'}</h3><div class="msub">Completa los datos de la recompensa</div>
     <label class="f">Título</label><input class="in" id="f_title" value="${h(t.title||'')}">
@@ -754,9 +795,19 @@ function taskModal(id, presetCat){
     <p class="hint">Si eliges una red social, el usuario deberá indicar su usuario en esa red y el envío quedará pendiente hasta que lo verifiques.</p>
     <label class="f">Requisitos</label><input class="in" id="f_req" value="${h(t.requirements||'')}">
     <label class="f">URL destino</label><input class="in" id="f_url" value="${h(t.target_url||'')}">
+    <label class="f">Imagen (opcional)</label>
+    <div class="imgpick" id="f_imgpick"></div>
+    <div class="imgpick-custom">
+      <input class="in" id="f_imgurl" placeholder="…o pega la URL de una imagen" oninput="taskImgSel=this.value.trim();drawImgPick()">
+      <img id="f_imgprev" class="imgprev" alt="Vista previa">
+    </div>
+    <p class="hint">Se muestra en la tarjeta de la tarea en el inicio y en la lista de tareas de la app.</p>
     <div class="error" id="mErr"></div>
     <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancelar</button>
       <button class="btn primary" onclick="saveTask(${id||'null'})">Guardar</button></div>`);
+  drawImgPick();
+  const _iu = document.getElementById('f_imgurl');
+  if (_iu && taskImgSel && !TASK_ICONS.some(ic => taskIconUrl(ic.id) === taskImgSel)) _iu.value = taskImgSel;
 }
 async function saveTask(id){
   const err = document.getElementById('mErr'); err.textContent='';
@@ -766,6 +817,7 @@ async function saveTask(id){
     max_completions_per_user:parseInt(f_max.value)||1, verification:f_ver.value,
     requirements:f_req.value.trim(), target_url:f_url.value.trim(),
     social_network:f_net.value||null, social_action:f_net.value?(f_act.value||null):null,
+    image_url:taskImgSel,
   };
   if(!body.title || body.points < 1){ err.textContent='Título y puntos (mínimo 1) son obligatorios.'; return; }
   try {

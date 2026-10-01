@@ -126,7 +126,6 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = taskIconBg(task.category);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -142,21 +141,7 @@ class TaskCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        bg.withValues(alpha: 0.16),
-                        bg.withValues(alpha: 0.08)
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(SipiRadii.md)),
-                child: Icon(taskIcon(task.category), color: bg, size: 22),
-              ),
+              TaskThumb(task: task),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -226,6 +211,49 @@ class TaskCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Miniatura de la tarea: muestra la imagen elegida en el panel
+/// (logo de red social o URL personalizada) o el icono de la categoría.
+class TaskThumb extends StatelessWidget {
+  final Task task;
+  const TaskThumb({required this.task});
+
+  @override
+  Widget build(BuildContext context) {
+    if (task.imageUrl.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(SipiRadii.md),
+        child: Image.network(
+          task.imageUrl,
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _iconThumb(),
+        ),
+      );
+    }
+    return _iconThumb();
+  }
+
+  Widget _iconThumb() {
+    final bg = taskIconBg(task.category);
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              bg.withValues(alpha: 0.16),
+              bg.withValues(alpha: 0.08)
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(SipiRadii.md)),
+      child: Icon(taskIcon(task.category), color: bg, size: 22),
     );
   }
 }

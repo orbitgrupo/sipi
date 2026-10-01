@@ -139,6 +139,14 @@ class SipiApi {
     return (j['tasks'] as List).map((e) => Task.fromJson(e)).toList();
   }
 
+  /// Tareas que el usuario ya completó (aprobadas), con fecha de completitud.
+  Future<List<Map<String, dynamic>>> taskHistory() async {
+    final j = await _req('GET', '/api/tasks/history');
+    return (j['tasks'] as List)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+  }
+
   Future<({Task task, List<TaskCompletion> mine})> taskDetail(int id) async {
     final j = await _req('GET', '/api/tasks/$id');
     return (

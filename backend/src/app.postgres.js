@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 
 const {
   requireAuth,
@@ -58,6 +59,12 @@ async function ensureSupportTables(db) {
     await db.query(`ALTER TABLE ${SCHEMA}.notifications ADD COLUMN IF NOT EXISTS reference_id BIGINT`);
   } catch (e) {
     console.error('[sipi] No se pudieron agregar columnas a notifications:', e.message);
+  }
+  // Imagen de la tarea (logo de red social o URL personalizada).
+  try {
+    await db.query(`ALTER TABLE ${SCHEMA}.tasks ADD COLUMN IF NOT EXISTS image_url TEXT NOT NULL DEFAULT ''`);
+  } catch (e) {
+    console.error('[sipi] No se pudo agregar image_url a tasks:', e.message);
   }
 }
 
@@ -287,6 +294,9 @@ function createApp(db) {
 
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' }));
+
+  // Imágenes públicas de tareas (logos de redes sociales, etc.).
+  app.use('/public', express.static(path.join(__dirname, '..', 'public')));
 
   app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -679,16 +689,13 @@ function createApp(db) {
                 ) AS my_status
            FROM ${SCHEMA}.tasks t
           WHERE ${where.join(' AND ')}
-            AND NOT (
-              t.category = 'social'
-              AND EXISTS (
-                SELECT 1
-                  FROM ${SCHEMA}.task_completions done
-                 WHERE done.task_id = t.id
-                   AND done.user_id = ${userParam}
-                   AND done.status = 'approved'
-              )
-            )
+            AND (
+              SELECT COUNT(*)
+                FROM ${SCHEMA}.task_completions done
+               WHERE done.task_id = t.id
+                 AND done.user_id = ${userParam}
+                 AND done.status = 'approved'
+            ) < COALESCE(t.max_completions_per_user, 1)
           ORDER BY t.created_at DESC`,
         params
       );
@@ -702,6 +709,24 @@ function createApp(db) {
         WHERE ${where.join(' AND ')}
         ORDER BY t.created_at DESC`,
       params
+    );
+
+    return res.json({ tasks: result.rows });
+  }));
+
+  // Historial de tareas completadas por el usuario (aprobadas).
+  // Definido antes de /api/tasks/:id para que "history" no se tome como id.
+  app.get('/api/tasks/history', requireAuth, asyncRoute(async (req, res) => {
+    const result = await db.query(
+      `SELECT t.*,
+              COALESCE(c.reviewed_at, c.submitted_at) AS completed_at
+         FROM ${SCHEMA}.task_completions c
+         JOIN ${SCHEMA}.tasks t ON t.id = c.task_id
+        WHERE c.user_id = $1
+          AND c.status = 'approved'
+        ORDER BY completed_at DESC
+        LIMIT 100`,
+      [req.user.id]
     );
 
     return res.json({ tasks: result.rows });
@@ -1444,6 +1469,15 @@ function createApp(db) {
     const maxCompletions = asInt(req.body?.max_completions_per_user, 1);
     const socialNetwork = req.body?.social_network || null;
     const socialAction = req.body?.social_action || null;
+    let imageUrl = String(req.body?.image_url || '').trim();
+    // Si es tarea de red social y no se eligió imagen, usa el logo de la red.
+    const networks = [
+      'instagram', 'tiktok', 'facebook', 'x', 'youtube',
+    ];
+    if (!imageUrl && socialNetwork && networks.includes(socialNetwork)) {
+      const publicBase = process.env.PUBLIC_BASE_URL || 'https://api-sipi-dev.catalina.my';
+      imageUrl = `${publicBase}/public/task-icons/${socialNetwork}.png`;
+    }
 
     if (!title || !points || points <= 0) {
       throw httpError(400, 'INVALID_TASK');
@@ -1462,10 +1496,6 @@ function createApp(db) {
       throw httpError(400, 'INVALID_VERIFICATION');
     }
 
-    const networks = [
-      'instagram', 'tiktok', 'facebook', 'x', 'youtube',
-    ];
-
     if (socialNetwork && !networks.includes(socialNetwork)) {
       throw httpError(400, 'INVALID_SOCIAL_NETWORK');
     }
@@ -1483,9 +1513,9 @@ function createApp(db) {
          (title, description, instructions, category, points,
           estimated_minutes, verification, requirements, target_url,
           max_completions_per_user, social_network, social_action,
-          created_by)
+          image_url, created_by)
        VALUES
-         ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+         ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
        RETURNING *`,
       [
         title,
@@ -1500,6 +1530,7 @@ function createApp(db) {
         maxCompletions,
         socialNetwork,
         socialAction,
+        imageUrl,
         req.user.id,
       ]
     );
@@ -1530,6 +1561,7 @@ function createApp(db) {
       active: 'boolean',
       social_network: 'nullable',
       social_action: 'nullable',
+      image_url: 'text',
     };
 
     const updates = [];
