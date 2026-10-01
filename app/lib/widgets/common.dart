@@ -176,12 +176,14 @@ class TaskCard extends StatelessWidget {
                         Icon(socialNetworkIcon(task.socialNetwork),
                             size: 13, color: SipiColors.primary),
                         const SizedBox(width: 4),
-                        Text(
-                            '${socialActionText(task.socialAction, task.socialNetwork)} · pide tu usuario',
-                            style: const TextStyle(
-                                color: SipiColors.primary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600)),
+                        Expanded(
+                          child: Text(
+                              '${socialActionText(task.socialAction, task.socialNetwork)} · pide tu usuario',
+                              style: const TextStyle(
+                                  color: SipiColors.primary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600)),
+                        ),
                       ]),
                     ],
                     const SizedBox(height: 4),
