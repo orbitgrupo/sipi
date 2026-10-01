@@ -1,6 +1,8 @@
 // Sipi — Tareas: lista con filtros/búsqueda, detalle y pantalla de éxito.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:confetti/confetti.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../core/theme.dart';
 import '../core/session.dart';
 import '../core/models.dart';
@@ -426,57 +428,124 @@ class _StatusBanner extends StatelessWidget {
 }
 
 /// Pantalla 7 del mockup: confirmación de tarea completada.
-class TaskSuccessScreen extends StatelessWidget {
+/// Cuando los puntos se acreditan de inmediato (encuestas), celebra
+/// con confeti y un sonido de fanfarria ("tarannn").
+class TaskSuccessScreen extends StatefulWidget {
   final int points;
   final bool autoApproved;
+  final String title;
   const TaskSuccessScreen(
-      {super.key, this.points = 0, this.autoApproved = true});
+      {super.key,
+      this.points = 0,
+      this.autoApproved = true,
+      this.title = '¡Tarea completada!'});
+
+  @override
+  State<TaskSuccessScreen> createState() => _TaskSuccessScreenState();
+}
+
+class _TaskSuccessScreenState extends State<TaskSuccessScreen> {
+  late final ConfettiController _confetti;
+  final AudioPlayer _player = AudioPlayer();
+
+  bool get _celebrate => widget.autoApproved && widget.points > 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _confetti = ConfettiController(duration: const Duration(seconds: 3));
+    if (_celebrate) {
+      // Confeti + "tarannn" al mostrar la pantalla.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _confetti.play();
+      });
+      _playFanfare();
+    }
+  }
+
+  Future<void> _playFanfare() async {
+    try {
+      await _player.play(AssetSource('sounds/fanfare.wav'));
+    } catch (_) {
+      // Sin audio disponible: la celebración visual sigue funcionando.
+    }
+  }
+
+  @override
+  void dispose() {
+    _confetti.dispose();
+    _player.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            children: [
-              const Spacer(),
-              Container(
-                width: 110,
-                height: 110,
-                decoration: BoxDecoration(
-                    color: SipiColors.success.withValues(alpha: 0.12),
-                    shape: BoxShape.circle),
-                child: const Icon(Icons.check,
-                    color: SipiColors.success, size: 60),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                children: [
+                  const Spacer(),
+                  Container(
+                    width: 110,
+                    height: 110,
+                    decoration: BoxDecoration(
+                        color: SipiColors.success.withValues(alpha: 0.12),
+                        shape: BoxShape.circle),
+                    child: const Icon(Icons.check,
+                        color: SipiColors.success, size: 60),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(widget.title,
+                      style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: SipiColors.text)),
+                  if (_celebrate)
+                    Text('+${widget.points} puntos',
+                        style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: SipiColors.primary)),
+                  const SizedBox(height: 12),
+                  Text(
+                    _celebrate
+                        ? '¡Felicidades! Los puntos ya están en tu saldo.'
+                        : 'Tu actividad está siendo verificada.\nTe avisaremos cuando se acrediten tus puntos.',
+                    textAlign: TextAlign.center,
+                    style:
+                        const TextStyle(color: SipiColors.muted, height: 1.5),
+                  ),
+                  const Spacer(),
+                  SipiButton(
+                      label: 'Ver más tareas',
+                      onPressed: () => Navigator.pop(context)),
+                  const SizedBox(height: 8),
+                ],
               ),
-              const SizedBox(height: 24),
-              const Text('¡Tarea completada!',
-                  style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: SipiColors.text)),
-              if (autoApproved && points > 0)
-                Text('+$points puntos',
-                    style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: SipiColors.primary)),
-              const SizedBox(height: 12),
-              Text(
-                autoApproved
-                    ? 'Tu actividad está siendo verificada.\nRecibirás tus puntos en unos minutos.'
-                    : 'Tu actividad está siendo verificada.\nTe avisaremos cuando se acrediten tus puntos.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: SipiColors.muted, height: 1.5),
+            ),
+            if (_celebrate)
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConfettiWidget(
+                  confettiController: _confetti,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  numberOfParticles: 60,
+                  gravity: 0.35,
+                  emissionFrequency: 0.05,
+                  colors: const [
+                    SipiColors.primary,
+                    SipiColors.success,
+                    Colors.amber,
+                    Colors.pinkAccent,
+                    Colors.lightBlue,
+                  ],
+                ),
               ),
-              const Spacer(),
-              SipiButton(
-                  label: 'Ver más tareas',
-                  onPressed: () => Navigator.pop(context)),
-              const SizedBox(height: 8),
-            ],
-          ),
+          ],
         ),
       ),
     );

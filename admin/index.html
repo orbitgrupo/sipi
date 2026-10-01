@@ -218,6 +218,19 @@
   .q-row .qhead{display:flex;gap:8px;align-items:center}
   .q-row .qhead .n{font-weight:800;color:var(--primary);font-size:13px;min-width:22px}
   .grid-f{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+  /* Resultados de encuestas */
+  .stat-cards{display:flex;gap:10px;margin:14px 0 6px}
+  .stat-card{flex:1;background:#F7F9FC;border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+  .stat-card b{display:block;font-size:22px;color:var(--primary)}
+  .stat-card span{font-size:11.5px;color:var(--muted);font-weight:600}
+  .q-stats{background:#F7F9FC;border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:10px}
+  .stat-row{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:12.5px}
+  .stat-label{flex:0 0 34%;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .stat-bar{flex:1;height:8px;background:#E4E9F2;border-radius:99px;overflow:hidden}
+  .stat-fill{height:100%;background:linear-gradient(90deg,var(--primary),#7C5CFF);border-radius:99px;transition:width .5s}
+  .stat-n{flex:0 0 auto;color:var(--muted);font-weight:700;min-width:64px;text-align:right}
+  .stat-avg{margin-top:8px;font-size:13px}
+  .stat-samples{margin-top:8px;display:grid;gap:6px}
   @media(max-width:600px){.grid-f{grid-template-columns:1fr}}
 
   /* Toast */
@@ -810,7 +823,7 @@ async function vEncuestas(){
     const {tasks} = await req('GET','/api/admin/tasks');
     window._surveyTasks = tasks;
     v.innerHTML = `
-      ${pageHead('Encuestas')}
+      ${pageHead('Encuestas', `<button class="btn primary" onclick="surveyCreateModal()">${ICONS.plus} Crear encuesta</button>`)}
       <div class="toolbar"><div class="search">${ICONS.search}<input class="in" id="sq" placeholder="Buscar tareas…" oninput="drawSurveyRows()"></div></div>
       <div class="table-wrap"><table>
         <tr><th>Tarea</th><th>Categoría</th><th>Puntos</th><th>Estado</th><th style="text-align:right">Acciones</th></tr>
@@ -827,8 +840,90 @@ function drawSurveyRows(){
     <td><span class="pill info">${h(CATS[t.category]||t.category)}</span></td>
     <td><b>${t.points}</b></td>
     <td>${t.active?'<span class="pill ok">Activa</span>':'<span class="pill warn">Pausada</span>'}</td>
-    <td><div class="row-actions"><button class="btn primary sm" onclick="surveyModal(${t.id},'${h(t.title).replace(/'/g,'')}')">Editar encuesta</button></div></td>
+    <td><div class="row-actions">
+      ${t.verification==='survey' ? `<button class="btn ghost sm" onclick="surveyStatsModal(${t.id},'${h(t.title).replace(/'/g,'')}')">Ver resultados</button>` : ''}
+      <button class="btn primary sm" onclick="surveyModal(${t.id},'${h(t.title).replace(/'/g,'')}')">Editar encuesta</button>
+    </div></td>
   </tr>`).join('') : `<tr><td colspan="5"><div class="empty">Sin tareas.</div></td></tr>`;
+}
+/* Crear encuesta + campaña en una sola ventana: crea la tarea
+   (categoría encuestas) y su encuesta de una vez. Al terminarla,
+   el usuario recibe los puntos automáticamente, sin revisión. */
+function surveyCreateModal(){
+  surveyQs = [{type:'single', text:'', options:['',''], required:true, min:1, max:5}];
+  openModal(`
+    <h3>Crear encuesta</h3><div class="msub">Crea la campaña y su encuesta en un solo paso. Los puntos se acreditan solos al terminarla.</div>
+    <label class="f">Título de la campaña</label><input class="in" id="sc_title" placeholder="Ej. Encuesta de satisfacción">
+    <label class="f">Descripción</label><textarea class="in" id="sc_desc" rows="2" placeholder="Describe de qué trata la encuesta"></textarea>
+    <div class="grid-f"><div><label class="f">Puntos al completarla</label><input class="in" id="sc_pts" type="number" min="1" value="25"></div>
+    <div><label class="f">Minutos estimados</label><input class="in" id="sc_min" type="number" min="1" value="5"></div></div>
+    <label class="f">Título de la encuesta</label><input class="in" id="sv_title" value="Encuesta">
+    <div id="qList"></div>
+    <button class="btn ghost sm" style="margin-top:12px" onclick="addQ()">${ICONS.plus} Agregar pregunta</button>
+    <div class="error" id="mErr"></div>
+    <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveSurveyCreate()">Crear encuesta</button></div>`);
+  drawQs();
+}
+async function saveSurveyCreate(){
+  const err = document.getElementById('mErr'); err.textContent='';
+  const title = document.getElementById('sc_title').value.trim();
+  const description = document.getElementById('sc_desc').value.trim();
+  const points = parseInt(document.getElementById('sc_pts').value)||0;
+  const minutes = parseInt(document.getElementById('sc_min').value)||5;
+  if(!title || points < 1){ err.textContent='Título y puntos (mínimo 1) son obligatorios.'; return; }
+  const questions = surveyQs.map((q,i) => {
+    const base = {id:'q'+(i+1), type:q.type, text:q.text.trim(), required:!!q.required};
+    if(q.type==='single'||q.type==='multiple'){
+      const options = q.options.map(o=>o.trim()).filter(Boolean);
+      if(options.length < 2){ err.textContent = `La pregunta ${i+1} necesita al menos 2 opciones.`; return null; }
+      return {...base, options};
+    }
+    if(q.type==='scale') return {...base, min:q.min||1, max:q.max||5};
+    return base;
+  });
+  if (questions.some(q => !q)) return;
+  if (questions.some(q => !q.text)){ err.textContent='Todas las preguntas necesitan texto.'; return; }
+  try {
+    const {task} = await req('POST','/api/admin/tasks',{title, description, category:'encuestas',
+      points, estimated_minutes:minutes, max_completions_per_user:1, verification:'auto'});
+    await req('PUT',`/api/admin/tasks/${task.id}`,{verification:'survey'});
+    await req('POST',`/api/admin/tasks/${task.id}/survey`,{title:document.getElementById('sv_title').value.trim()||'Encuesta', questions});
+    closeModal(); toast('Encuesta creada.'); vEncuestas();
+  } catch(e){ err.textContent = friendlyErr(e); }
+}
+/* Ventana para administrar cómo va cada encuesta: respuestas totales
+   y distribución por pregunta. */
+async function surveyStatsModal(taskId, title){
+  openModal(`<h3>Resultados</h3><div class="msub">${h(title||'')}</div><div class="loading">Cargando…</div>
+    <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>`);
+  try {
+    const d = await req('GET',`/api/admin/tasks/${taskId}/survey/stats`);
+    const pct = (n,total) => total? Math.round(n/total*100):0;
+    const bar = (label,n,total) => `
+      <div class="stat-row"><span class="stat-label">${h(String(label))}</span>
+        <div class="stat-bar"><div class="stat-fill" style="width:${pct(n,total)}%"></div></div>
+        <span class="stat-n">${n} · ${pct(n,total)}%</span></div>`;
+    const body = d.questions.length ? d.questions.map((q,i) => `
+      <div class="q-stats"><div class="cell-main">${i+1}. ${h(q.text)}</div>
+        <div class="cell-sub">${d.total_responses? `${q.answers} de ${d.total_responses} respondieron`: 'Sin respuestas aún'}</div>
+        ${q.counts ? Object.entries(q.counts).map(([k,v]) => bar(k,v,q.answers)).join('')
+          : (q.average!=null ? `<div class="stat-avg">Promedio: <b>${q.average}</b> (escala ${q.min}–${q.max})</div>`+Object.entries(q.counts||{}).map(([k,v]) => bar(k,v,q.answers)).join('') : '')}
+        ${(q.samples&&q.samples.length) ? `<div class="stat-samples">${q.samples.map(s=>`<div class="evid">“${h(s)}”</div>`).join('')}</div>` : ''}
+      </div>`).join('')
+      : `<div class="empty">Esta encuesta aún no tiene preguntas.</div>`;
+    document.getElementById('modalBox').innerHTML = `
+      <h3>Resultados</h3><div class="msub">${h(d.survey.title||'')}</div>
+      <div class="stat-cards"><div class="stat-card"><b>${d.total_responses}</b><span>respuestas</span></div>
+        <div class="stat-card"><b>${d.survey.points}</b><span>puntos c/u</span></div>
+        <div class="stat-card"><b>${d.total_responses*d.survey.points}</b><span>puntos entregados</span></div></div>
+      ${body}
+      <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>`;
+  } catch(e){
+    document.getElementById('modalBox').innerHTML = `
+      <h3>Resultados</h3><p class="error">Error: ${h(friendlyErr(e))}</p>
+      <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>`;
+  }
 }
 let surveyQs = [];
 function surveyModal(taskId, title){

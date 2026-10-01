@@ -74,7 +74,8 @@ class _SurveyAnswerScreenState extends State<SurveyAnswerScreen> {
           context,
           MaterialPageRoute(
               builder: (_) => TaskSuccessScreen(
-                  points: (r['points'] ?? 0) as int,
+                  title: '¡Encuesta completada!',
+                  points: (r['points'] as num?)?.toInt() ?? 0,
                   autoApproved: r['auto_approved'] == true)));
     } catch (e) {
       if (mounted) showError(context, e);

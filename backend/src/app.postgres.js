@@ -764,7 +764,9 @@ function createApp(db) {
 
       let autoApproved = false;
 
-      if (survey.verification === 'auto') {
+      // Las encuestas siempre otorgan los puntos al terminarlas:
+      // no pasan por revisión del administrador.
+      {
         const completionResult = await client.query(
           `INSERT INTO ${SCHEMA}.task_completions
              (task_id, user_id, status, evidence, reviewed_at)
@@ -792,12 +794,14 @@ function createApp(db) {
       return {
         response: responseResult.rows[0],
         autoApproved,
+        points: survey.points,
       };
     });
 
     return res.status(201).json({
       response: result.response,
       auto_approved: result.autoApproved,
+      points: result.points,
     });
   }));
 
@@ -1328,6 +1332,133 @@ function createApp(db) {
 
     return res.status(201).json({
       survey: result.rows[0],
+    });
+  }));
+
+  // ─────────────────────────────────────────────
+  // ADMIN — estadísticas de una encuesta (cómo va cada encuesta)
+  // ─────────────────────────────────────────────
+
+  app.get('/api/admin/tasks/:id/survey/stats', requireAuth, requireAdmin, asyncRoute(async (req, res) => {
+    const taskId = asInt(req.params.id);
+
+    if (!taskId) {
+      throw httpError(400, 'INVALID_TASK_ID');
+    }
+
+    const surveyResult = await db.query(
+      `SELECT s.id, s.task_id, s.title, s.questions, t.points
+         FROM ${SCHEMA}.surveys s
+         JOIN ${SCHEMA}.tasks t ON t.id = s.task_id
+        WHERE s.task_id = $1`,
+      [taskId]
+    );
+
+    const survey = surveyResult.rows[0];
+
+    if (!survey) {
+      throw httpError(404, 'SURVEY_NOT_FOUND');
+    }
+
+    const responsesResult = await db.query(
+      `SELECT answers
+         FROM ${SCHEMA}.survey_responses
+        WHERE survey_id = $1`,
+      [survey.id]
+    );
+
+    const responses = responsesResult.rows;
+    const questions = Array.isArray(survey.questions) ? survey.questions : [];
+
+    const stats = questions.map((q) => {
+      const base = {
+        id: q.id,
+        text: q.text || '',
+        type: q.type,
+        answers: 0,
+      };
+
+      const valueOf = (row) => row.answers?.[q.id];
+
+      if (q.type === 'single' || q.type === 'multiple') {
+        const options = Array.isArray(q.options) ? q.options : [];
+        const counts = Object.fromEntries(options.map((o) => [o, 0]));
+
+        for (const row of responses) {
+          const v = valueOf(row);
+          if (v === undefined || v === null || v === '') continue;
+          base.answers += 1;
+          const list = Array.isArray(v) ? v : [v];
+          for (const item of list) {
+            if (Object.prototype.hasOwnProperty.call(counts, item)) {
+              counts[item] += 1;
+            }
+          }
+        }
+
+        return { ...base, options, counts };
+      }
+
+      if (q.type === 'yesno') {
+        let yes = 0;
+        let no = 0;
+
+        for (const row of responses) {
+          const v = valueOf(row);
+          if (v === true) { yes += 1; base.answers += 1; }
+          else if (v === false) { no += 1; base.answers += 1; }
+        }
+
+        return { ...base, counts: { 'Sí': yes, 'No': no } };
+      }
+
+      if (q.type === 'scale') {
+        const min = Number.isInteger(q.min) ? q.min : 1;
+        const max = Number.isInteger(q.max) ? q.max : 5;
+        const counts = {};
+        for (let v = min; v <= max; v++) counts[v] = 0;
+        let sum = 0;
+
+        for (const row of responses) {
+          const v = valueOf(row);
+          if (typeof v !== 'number') continue;
+          base.answers += 1;
+          sum += v;
+          if (Object.prototype.hasOwnProperty.call(counts, v)) {
+            counts[v] += 1;
+          }
+        }
+
+        return {
+          ...base,
+          min,
+          max,
+          counts,
+          average: base.answers ? Math.round((sum / base.answers) * 10) / 10 : null,
+        };
+      }
+
+      const samples = [];
+
+      for (const row of responses) {
+        const v = valueOf(row);
+        if (typeof v !== 'string' || !v.trim()) continue;
+        base.answers += 1;
+        if (samples.length < 5) samples.push(v.trim().slice(0, 140));
+      }
+
+      return { ...base, samples };
+    });
+
+    return res.json({
+      survey: {
+        id: Number(survey.id),
+        task_id: Number(survey.task_id),
+        title: survey.title,
+        points: Number(survey.points),
+      },
+      total_responses: responses.length,
+      questions: stats,
     });
   }));
 
