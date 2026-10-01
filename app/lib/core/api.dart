@@ -29,6 +29,12 @@ class ApiException implements Exception {
         return 'Indica tu usuario en la red social para participar.';
       case 'SURVEY_ALREADY_ANSWERED':
         return 'Ya respondiste esta encuesta.';
+      case 'REQUIRED_QUESTION_MISSING':
+        return 'Responde todas las preguntas obligatorias (*).';
+      case 'SURVEY_NOT_FOUND':
+        return 'Esta encuesta ya no está disponible.';
+      case 'INVALID_ANSWERS':
+        return 'Las respuestas no son válidas. Inténtalo de nuevo.';
       case 'THREAD_CLOSED':
         return 'Esta conversación está cerrada.';
       case 'MESSAGE_REQUIRED':

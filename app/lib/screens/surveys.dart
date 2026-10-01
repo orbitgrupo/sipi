@@ -65,6 +65,32 @@ class _SurveyAnswerScreenState extends State<SurveyAnswerScreen> {
       }
       return;
     }
+    // Validación local: indica exactamente qué pregunta obligatoria falta.
+    final survey = _survey;
+    if (survey != null) {
+      for (var i = 0; i < survey.questions.length; i++) {
+        final q = survey.questions[i];
+        if (!q.required) continue;
+        final v = _answers[q.id];
+        final missing = v == null || v == '' || (v is List && v.isEmpty);
+        if (missing && mounted) {
+          await showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Falta una respuesta'),
+              content: Text(
+                  'Responde la pregunta ${i + 1} para poder enviar la encuesta.'),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'))
+              ],
+            ),
+          );
+          return;
+        }
+      }
+    }
     setState(() => _sending = true);
     try {
       final r = await widget.session.api.answerSurvey(widget.taskId, _answers);
@@ -212,7 +238,7 @@ class _QuestionCard extends StatelessWidget {
             ButtonSegment(value: false, label: Text('No')),
           ],
           selected: value is bool ? {value as bool} : const <bool>{},
-          onSelectionChanged: (s) => onChanged(s.first),
+          onSelectionChanged: (s) => onChanged(s.isEmpty ? null : s.first),
         );
       case 'scale':
         {
