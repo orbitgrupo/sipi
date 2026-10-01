@@ -1,6 +1,26 @@
 // Sipi — modelos de datos (espejo de la API del backend).
+
+/// La API puede devolver enteros como número o como string (bigint de
+/// PostgreSQL); estos helpers los normalizan para que la app no se rompa
+/// al sincronizar datos creados en el panel.
+int asInt(dynamic v, [int fallback = 0]) {
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v == null) return fallback;
+  return int.tryParse(v.toString()) ?? fallback;
+}
+
+double asDouble(dynamic v, [double fallback = 0]) {
+  if (v is double) return v;
+  if (v is num) return v.toDouble();
+  if (v == null) return fallback;
+  return double.tryParse(v.toString()) ?? fallback;
+}
+
+bool asBool(dynamic v) => v == true || v == 1 || v == '1' || v == 'true';
+
 class User {
-  final int id;
+  final String id;
   final String name;
   final String email;
   final String role;
@@ -12,7 +32,7 @@ class User {
       required this.role,
       this.approved = true});
   factory User.fromJson(Map<String, dynamic> j) => User(
-      id: j['id'],
+      id: j['id'].toString(),
       name: j['name'],
       email: j['email'],
       role: j['role'] ?? 'user',
@@ -37,13 +57,13 @@ class Balance {
     required this.level,
   });
   factory Balance.fromJson(Map<String, dynamic> j) => Balance(
-        points: j['points'] ?? 0,
-        pendingPoints: j['pending_points'] ?? 0,
-        earnedPoints: j['earned_points'] ?? 0,
-        usedPoints: j['used_points'] ?? 0,
-        usd: (j['usd'] ?? 0).toDouble(),
-        pointsPerUsd: j['points_per_usd'] ?? 50,
-        level: j['level'] ?? 1,
+        points: asInt(j['points']),
+        pendingPoints: asInt(j['pending_points']),
+        earnedPoints: asInt(j['earned_points']),
+        usedPoints: asInt(j['used_points']),
+        usd: asDouble(j['usd']),
+        pointsPerUsd: asInt(j['points_per_usd'], 50),
+        level: asInt(j['level'], 1),
       );
 }
 
@@ -77,13 +97,13 @@ class Task {
     this.myStatus,
   });
   factory Task.fromJson(Map<String, dynamic> j) => Task(
-        id: j['id'],
+        id: asInt(j['id']),
         title: j['title'] ?? '',
         description: j['description'] ?? '',
         instructions: j['instructions'] ?? '',
         category: j['category'] ?? 'otras',
-        points: j['points'] ?? 0,
-        estimatedMinutes: j['estimated_minutes'] ?? 5,
+        points: asInt(j['points']),
+        estimatedMinutes: asInt(j['estimated_minutes'], 5),
         verification: j['verification'] ?? 'manual',
         requirements: j['requirements'] ?? '',
         targetUrl: j['target_url'] ?? '',
@@ -101,7 +121,7 @@ class TaskCompletion {
   final String? network;
   TaskCompletion({required this.id, required this.status, this.handle, this.network});
   factory TaskCompletion.fromJson(Map<String, dynamic> j) =>
-      TaskCompletion(id: j['id'], status: j['status'] ?? 'pending', handle: j['handle'], network: j['network']);
+      TaskCompletion(id: asInt(j['id']), status: j['status'] ?? 'pending', handle: j['handle'], network: j['network']);
 }
 
 class SurveyQuestion {
@@ -122,14 +142,14 @@ class SurveyQuestion {
     this.max = 5,
   });
   factory SurveyQuestion.fromJson(Map<String, dynamic> j) => SurveyQuestion(
-        id: j['id'],
+        id: j['id'].toString(),
         type: j['type'],
         text: j['text'] ?? '',
         options:
             (j['options'] as List? ?? []).map((e) => e.toString()).toList(),
         required: j['required'] ?? false,
-        min: j['min'] ?? 1,
-        max: j['max'] ?? 5,
+        min: asInt(j['min'], 1),
+        max: asInt(j['max'], 5),
       );
 }
 
@@ -148,8 +168,8 @@ class Survey {
   factory Survey.fromJson(Map<String, dynamic> j) {
     final s = j['survey'] ?? j;
     return Survey(
-      id: s['id'],
-      taskId: s['task_id'] ?? 0,
+      id: asInt(s['id']),
+      taskId: asInt(s['task_id']),
       title: s['title'] ?? '',
       questions: ((s['questions'] as List?) ?? [])
           .map((q) => SurveyQuestion.fromJson(q))
@@ -180,10 +200,10 @@ class Achievement {
         code: j['code'],
         name: j['name'],
         description: j['description'] ?? '',
-        threshold: j['threshold'] ?? 0,
-        bonusPoints: j['bonus_points'] ?? 0,
-        earned: j['earned'] ?? false,
-        progress: j['progress'] ?? 0,
+        threshold: asInt(j['threshold']),
+        bonusPoints: asInt(j['bonus_points']),
+        earned: asBool(j['earned']),
+        progress: asInt(j['progress']),
       );
 }
 
@@ -200,9 +220,9 @@ class Redemption {
       required this.status,
       required this.createdAt});
   factory Redemption.fromJson(Map<String, dynamic> j) => Redemption(
-        id: j['id'],
-        points: j['points'],
-        amountUsd: (j['amount_usd'] ?? 0).toDouble(),
+        id: asInt(j['id']),
+        points: asInt(j['points']),
+        amountUsd: asDouble(j['amount_usd']),
         status: j['status'] ?? 'pending',
         createdAt: j['created_at'] ?? '',
       );
@@ -222,8 +242,8 @@ class LedgerMovement {
       required this.createdAt});
   factory LedgerMovement.fromJson(Map<String, dynamic> j) => LedgerMovement(
         type: j['type'] ?? '',
-        points: j['points'] ?? 0,
-        balanceAfter: j['balance_after'] ?? 0,
+        points: asInt(j['points']),
+        balanceAfter: asInt(j['balance_after']),
         note: j['note'] ?? '',
         createdAt: j['created_at'] ?? '',
       );
@@ -244,11 +264,11 @@ class SipiNotification {
       required this.read,
       required this.createdAt});
   factory SipiNotification.fromJson(Map<String, dynamic> j) => SipiNotification(
-        id: j['id'],
+        id: asInt(j['id']),
         type: j['type'] ?? '',
         title: j['title'] ?? '',
         body: j['body'] ?? '',
-        read: (j['is_read'] ?? 0) == 1,
+        read: asBool(j['is_read']),
         createdAt: j['created_at'] ?? '',
       );
 }

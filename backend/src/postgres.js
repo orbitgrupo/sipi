@@ -1,4 +1,10 @@
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
+
+// node-pg devuelve BIGINT como string por defecto; la app móvil y el panel
+// esperan números (ids, puntos, contadores).
+types.setTypeParser(20, (value) =>
+  value === null || value === undefined ? value : parseInt(value, 10)
+);
 
 const pool = new Pool({
   host: process.env.DB_HOST,

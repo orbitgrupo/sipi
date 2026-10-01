@@ -1533,7 +1533,7 @@ function createApp(db) {
     });
   }));
 
-  app.patch('/api/notifications/:id/read', requireAuth, asyncRoute(async (req, res) => {
+  const markNotificationRead = asyncRoute(async (req, res) => {
     const notificationId = asInt(req.params.id);
 
     if (!notificationId) {
@@ -1556,7 +1556,12 @@ function createApp(db) {
     return res.json({
       notification: result.rows[0],
     });
-  }));
+  });
+
+  // PATCH es el verbo REST correcto; POST se acepta por compatibilidad
+  // con la app móvil.
+  app.patch('/api/notifications/:id/read', requireAuth, markNotificationRead);
+  app.post('/api/notifications/:id/read', requireAuth, markNotificationRead);
 
   // ─────────────────────────────────────────────
   // ADMIN — canjes

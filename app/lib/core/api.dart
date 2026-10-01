@@ -42,7 +42,7 @@ class ApiException implements Exception {
 class SipiApi {
   final String baseUrl;
   String? token;
-  SipiApi({this.baseUrl = 'http://10.0.2.2:3000'});
+  SipiApi({this.baseUrl = 'https://api-sipi-dev.catalina.my'});
 
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
