@@ -233,6 +233,7 @@ class _QuestionCard extends StatelessWidget {
         }
       case 'yesno':
         return SegmentedButton<bool>(
+          emptySelectionAllowed: true,
           segments: const [
             ButtonSegment(value: true, label: Text('Sí')),
             ButtonSegment(value: false, label: Text('No')),
