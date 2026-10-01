@@ -75,6 +75,20 @@ function serializeSupportMessage(m) {
   };
 }
 
+// Si las tablas de soporte aún no existen (p. ej. el rol de la API no
+// pudo crearlas al arrancar), intenta crearlas y reintenta una vez.
+async function withSupportTables(db, fn) {
+  try {
+    return await fn();
+  } catch (e) {
+    if (e && e.code === '42P01') {
+      await ensureSupportTables(db);
+      return await fn();
+    }
+    throw e;
+  }
+}
+
 function asyncRoute(fn) {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
@@ -870,7 +884,7 @@ function createApp(db) {
   const SUPPORT_KINDS = ['pregunta', 'queja', 'sugerencia'];
 
   app.get('/api/support/threads', requireAuth, asyncRoute(async (req, res) => {
-    const result = await db.query(
+    const result = await withSupportTables(db, () => db.query(
       `SELECT t.*,
               (SELECT m.body FROM ${SCHEMA}.support_messages m
                 WHERE m.thread_id = t.id ORDER BY m.id DESC LIMIT 1) AS last_message
@@ -878,7 +892,7 @@ function createApp(db) {
         WHERE t.user_id = $1
         ORDER BY t.updated_at DESC`,
       [req.user.id]
-    );
+    ));
 
     return res.json({
       threads: result.rows.map((t) => ({
@@ -901,7 +915,7 @@ function createApp(db) {
       throw httpError(400, 'MESSAGE_REQUIRED');
     }
 
-    const thread = await db.withTransaction(async (client) => {
+    const thread = await withSupportTables(db, () => db.withTransaction(async (client) => {
       const t = await client.query(
         `INSERT INTO ${SCHEMA}.support_threads (user_id, subject, kind, unread_admin)
          VALUES ($1, $2, $3, true)
@@ -916,7 +930,7 @@ function createApp(db) {
       );
 
       return t.rows[0];
-    });
+    }));
 
     return res.status(201).json({ thread: serializeThread(thread) });
   }));
@@ -924,10 +938,10 @@ function createApp(db) {
   app.get('/api/support/threads/:id', requireAuth, asyncRoute(async (req, res) => {
     const threadId = asInt(req.params.id);
 
-    const t = await db.query(
+    const t = await withSupportTables(db, () => db.query(
       `SELECT * FROM ${SCHEMA}.support_threads WHERE id = $1 AND user_id = $2`,
       [threadId, req.user.id]
-    );
+    ));
 
     if (!t.rowCount) {
       throw httpError(404, 'THREAD_NOT_FOUND');
@@ -957,10 +971,10 @@ function createApp(db) {
       throw httpError(400, 'MESSAGE_REQUIRED');
     }
 
-    const t = await db.query(
+    const t = await withSupportTables(db, () => db.query(
       `SELECT * FROM ${SCHEMA}.support_threads WHERE id = $1 AND user_id = $2`,
       [threadId, req.user.id]
-    );
+    ));
 
     const thread = t.rows[0];
 
@@ -1661,7 +1675,7 @@ function createApp(db) {
   // ─────────────────────────────────────────────
 
   app.get('/api/admin/support/threads', requireAuth, requireAdmin, asyncRoute(async (_req, res) => {
-    const result = await db.query(
+    const result = await withSupportTables(db, () => db.query(
       `SELECT t.*,
               p.name AS user_name,
               p.email AS user_email,
@@ -1672,7 +1686,7 @@ function createApp(db) {
          FROM ${SCHEMA}.support_threads t
          LEFT JOIN ${SCHEMA}.profiles p ON p.id = t.user_id
         ORDER BY t.unread_admin DESC, t.updated_at DESC`
-    );
+    ));
 
     return res.json({
       threads: result.rows.map((t) => ({
@@ -1688,13 +1702,13 @@ function createApp(db) {
   app.get('/api/admin/support/threads/:id', requireAuth, requireAdmin, asyncRoute(async (req, res) => {
     const threadId = asInt(req.params.id);
 
-    const t = await db.query(
+    const t = await withSupportTables(db, () => db.query(
       `SELECT t.*, p.name AS user_name, p.email AS user_email
          FROM ${SCHEMA}.support_threads t
          LEFT JOIN ${SCHEMA}.profiles p ON p.id = t.user_id
         WHERE t.id = $1`,
       [threadId]
-    );
+    ));
 
     if (!t.rowCount) {
       throw httpError(404, 'THREAD_NOT_FOUND');
@@ -1728,10 +1742,10 @@ function createApp(db) {
       throw httpError(400, 'MESSAGE_REQUIRED');
     }
 
-    const t = await db.query(
+    const t = await withSupportTables(db, () => db.query(
       `SELECT id FROM ${SCHEMA}.support_threads WHERE id = $1`,
       [threadId]
-    );
+    ));
 
     if (!t.rowCount) {
       throw httpError(404, 'THREAD_NOT_FOUND');
@@ -1763,13 +1777,13 @@ function createApp(db) {
       throw httpError(400, 'INVALID_STATUS');
     }
 
-    const r = await db.query(
+    const r = await withSupportTables(db, () => db.query(
       `UPDATE ${SCHEMA}.support_threads
           SET status = $1, updated_at = now()
         WHERE id = $2
         RETURNING *`,
       [status, threadId]
-    );
+    ));
 
     if (!r.rowCount) {
       throw httpError(404, 'THREAD_NOT_FOUND');
