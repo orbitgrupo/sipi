@@ -20,9 +20,13 @@ CREATE TABLE IF NOT EXISTS sipi_dev.support_messages (
   id BIGSERIAL PRIMARY KEY,
   thread_id BIGINT NOT NULL REFERENCES sipi_dev.support_threads(id) ON DELETE CASCADE,
   sender TEXT NOT NULL,
+  sender_name TEXT NOT NULL DEFAULT '',
   body TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_support_threads_user ON sipi_dev.support_threads(user_id);
 CREATE INDEX IF NOT EXISTS idx_support_messages_thread ON sipi_dev.support_messages(thread_id);
+
+-- Por si las tablas ya existían sin la columna sender_name:
+ALTER TABLE sipi_dev.support_messages ADD COLUMN IF NOT EXISTS sender_name TEXT NOT NULL DEFAULT '';

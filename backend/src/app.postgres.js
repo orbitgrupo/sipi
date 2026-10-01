@@ -44,11 +44,14 @@ async function ensureSupportTables(db) {
       id BIGSERIAL PRIMARY KEY,
       thread_id BIGINT NOT NULL REFERENCES ${SCHEMA}.support_threads(id) ON DELETE CASCADE,
       sender TEXT NOT NULL,
+      sender_name TEXT NOT NULL DEFAULT '',
       body TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`);
   await db.query(`CREATE INDEX IF NOT EXISTS idx_support_threads_user ON ${SCHEMA}.support_threads(user_id)`);
   await db.query(`CREATE INDEX IF NOT EXISTS idx_support_messages_thread ON ${SCHEMA}.support_messages(thread_id)`);
+  // Por si las tablas ya existían sin la columna (creadas a mano):
+  await db.query(`ALTER TABLE ${SCHEMA}.support_messages ADD COLUMN IF NOT EXISTS sender_name TEXT NOT NULL DEFAULT ''`);
 }
 
 function serializeThread(t) {
@@ -70,6 +73,7 @@ function serializeSupportMessage(m) {
     id: Number(m.id),
     thread_id: Number(m.thread_id),
     sender: m.sender,
+    sender_name: m.sender_name || '',
     body: m.body,
     created_at: m.created_at,
   };
@@ -1758,12 +1762,20 @@ function createApp(db) {
       throw httpError(404, 'THREAD_NOT_FOUND');
     }
 
-    const m = await db.query(
-      `INSERT INTO ${SCHEMA}.support_messages (thread_id, sender, body)
-       VALUES ($1, 'admin', $2)
-       RETURNING *`,
-      [threadId, message]
-    );
+    const m = await withSupportTables(db, async () => {
+      const prof = await db.query(
+        `SELECT name FROM ${SCHEMA}.profiles WHERE id = $1`,
+        [req.user.id]
+      );
+      const adminName = prof.rows[0]?.name || 'Soporte';
+
+      return db.query(
+        `INSERT INTO ${SCHEMA}.support_messages (thread_id, sender, sender_name, body)
+         VALUES ($1, 'admin', $2, $3)
+         RETURNING *`,
+        [threadId, adminName, message]
+      );
+    });
 
     // Responder reabre el caso y avisa al usuario.
     await db.query(

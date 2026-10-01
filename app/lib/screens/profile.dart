@@ -1153,6 +1153,36 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(color: SipiColors.muted, fontSize: 13)),
             ),
+          if (_status == 'open' &&
+              !_loading &&
+              !_messages.any((m) => m['sender'] == 'admin'))
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: SipiColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: SipiColors.primary.withValues(alpha: 0.25)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.support_agent,
+                      color: SipiColors.primary, size: 30),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Tu mensaje fue recibido. Un miembro de nuestro equipo se comunicará contigo tan pronto como sea posible.',
+                      style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: SipiColors.text),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
@@ -1172,6 +1202,8 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                             itemBuilder: (_, i) {
                               final m = _messages[i];
                               final mine = m['sender'] == 'user';
+                              final adminName =
+                                  ((m['sender_name'] as String?) ?? '').trim();
                               return Align(
                                 alignment: mine
                                     ? Alignment.centerRight
@@ -1197,13 +1229,34 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                                           Radius.circular(mine ? 4 : 16),
                                     ),
                                   ),
-                                  child: Text(
-                                    (m['body'] as String?) ?? '',
-                                    style: TextStyle(
-                                        color: mine
-                                            ? Colors.white
-                                            : SipiColors.text,
-                                        height: 1.4),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (!mine)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              bottom: 4),
+                                          child: Text(
+                                            adminName.isNotEmpty
+                                                ? '$adminName · Soporte'
+                                                : 'Soporte',
+                                            style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: SipiColors.primary),
+                                          ),
+                                        ),
+                                      Text(
+                                        (m['body'] as String?) ?? '',
+                                        style: TextStyle(
+                                            color: mine
+                                                ? Colors.white
+                                                : SipiColors.text,
+                                            height: 1.4),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               );
