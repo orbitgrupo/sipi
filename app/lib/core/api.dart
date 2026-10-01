@@ -29,6 +29,10 @@ class ApiException implements Exception {
         return 'Indica tu usuario en la red social para participar.';
       case 'SURVEY_ALREADY_ANSWERED':
         return 'Ya respondiste esta encuesta.';
+      case 'THREAD_CLOSED':
+        return 'Esta conversación está cerrada.';
+      case 'MESSAGE_REQUIRED':
+        return 'Escribe un mensaje primero.';
       case 'AMOUNT_TOO_LOW':
         return 'El monto es demasiado bajo.';
       case 'INVALID_EMAIL':
@@ -155,6 +159,33 @@ class SipiApi {
     final j =
         await _req('POST', '/api/tasks/$taskId/survey', {'answers': answers});
     return Map<String, dynamic>.from(j);
+  }
+
+  // ---- Soporte ----
+  Future<List<Map<String, dynamic>>> supportThreads() async {
+    final j = await _req('GET', '/api/support/threads');
+    return (j['threads'] as List)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> createSupportThread(
+      {required String kind,
+      required String subject,
+      required String message}) async {
+    final j = await _req('POST', '/api/support/threads',
+        {'kind': kind, 'subject': subject, 'message': message});
+    return Map<String, dynamic>.from(j['thread'] as Map);
+  }
+
+  Future<Map<String, dynamic>> supportThread(int id) async {
+    final j = await _req('GET', '/api/support/threads/$id');
+    return Map<String, dynamic>.from(j);
+  }
+
+  Future<void> sendSupportMessage(int id, String message) async {
+    await _req(
+        'POST', '/api/support/threads/$id/messages', {'message': message});
   }
 
   // ---- Canjes ----

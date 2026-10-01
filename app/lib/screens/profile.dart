@@ -763,11 +763,51 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 }
 
 // ---------------- Soporte ----------------
-class SupportScreen extends StatelessWidget {
+class SupportScreen extends StatefulWidget {
   final Session session;
   const SupportScreen({super.key, required this.session});
 
-  void _faq(BuildContext context, String topic, String answer) {
+  @override
+  State<SupportScreen> createState() => _SupportScreenState();
+}
+
+class _SupportScreenState extends State<SupportScreen> {
+  List<Map<String, dynamic>> _threads = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (!widget.session.canInteract) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    try {
+      final t = await widget.session.api.supportThreads();
+      if (mounted) setState(() {
+        _threads = t;
+        _loading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        showError(context, e);
+      }
+    }
+  }
+
+  Future<void> _needAccount() async {
+    if (await ensureAccount(context, widget.session) && mounted) {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (_) => RegisterScreen(session: widget.session)));
+    }
+  }
+
+  void _faq(String topic, String answer) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -783,62 +823,423 @@ class SupportScreen extends StatelessWidget {
     );
   }
 
+  String _kindLabel(String k) =>
+      {'pregunta': 'Pregunta', 'queja': 'Queja', 'sugerencia': 'Sugerencia'}[k] ?? k;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Soporte')),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            const Center(
+              child: Column(children: [
+                Icon(Icons.support_agent, size: 64, color: SipiColors.primary),
+                SizedBox(height: 12),
+                Text('¿En qué podemos ayudarte?',
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: SipiColors.text)),
+                Text('Nuestro equipo te responderá lo más\npronto posible.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: SipiColors.muted)),
+              ]),
+            ),
+            const SizedBox(height: 20),
+            SipiButton(
+                label: 'Enviar mensaje',
+                onPressed: () async {
+                  if (!widget.session.canInteract) {
+                    await _needAccount();
+                    return;
+                  }
+                  final created = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              NewSupportThreadScreen(session: widget.session)));
+                  if (created == true) _load();
+                }),
+            const SizedBox(height: 24),
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else if (widget.session.canInteract && _threads.isNotEmpty) ...[
+              const Text('Mis conversaciones',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: SipiColors.text)),
+              const SizedBox(height: 10),
+              ..._threads.map((t) => Card(
+                    elevation: 0,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: (t['unread_user'] == true)
+                            ? SipiColors.primary
+                            : SipiColors.muted.withValues(alpha: 0.25),
+                        child: Icon(
+                            t['kind'] == 'queja'
+                                ? Icons.report_outlined
+                                : Icons.chat_bubble_outline,
+                            color: (t['unread_user'] == true)
+                                ? Colors.white
+                                : SipiColors.muted),
+                      ),
+                      title: Text(
+                          (t['subject'] as String?)?.isNotEmpty == true
+                              ? t['subject'] as String
+                              : 'Conversación',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontWeight: (t['unread_user'] == true)
+                                  ? FontWeight.w800
+                                  : FontWeight.w600)),
+                      subtitle: Text(
+                          '${_kindLabel(t['kind'] as String? ?? '')} · ${(t['last_message'] as String?) ?? ''}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                      trailing: (t['status'] as String?) == 'closed'
+                          ? const Text('Cerrada',
+                              style: TextStyle(
+                                  color: SipiColors.muted, fontSize: 12))
+                          : const Icon(Icons.chevron_right),
+                      onTap: () async {
+                        await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => SupportChatScreen(
+                                    session: widget.session,
+                                    threadId: (t['id'] as num).toInt(),
+                                    subject: (t['subject'] as String?) ?? '')));
+                        _load();
+                      },
+                    ),
+                  )),
+              const SizedBox(height: 14),
+            ],
+            const Text('Temas comunes',
+                style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: SipiColors.text)),
+            const SizedBox(height: 10),
+            _MenuItem(
+                icon: Icons.task_outlined,
+                label: 'Problemas con tareas',
+                onTap: () => _faq('Problemas con tareas',
+                    'Si una tarea no se acredita, verifica que hayas completado todos los pasos y enviado la verificación. Las tareas manuales se revisan en un máximo de 48 horas.')),
+            _MenuItem(
+                icon: Icons.payments_outlined,
+                label: 'Pagos y recompensas',
+                onTap: () => _faq('Pagos y recompensas',
+                    'Puedes canjear tus puntos desde la pestaña Canjear cuando alcances el mínimo. Los pagos se procesan en 1 a 3 días hábiles.')),
+            _MenuItem(
+                icon: Icons.person_outline,
+                label: 'Mi cuenta',
+                onTap: () => _faq('Mi cuenta',
+                    'Puedes actualizar tu nombre, correo y contraseña desde Perfil > Editar perfil. Si no puedes entrar a tu cuenta, escríbenos con el botón de arriba.')),
+            _MenuItem(
+                icon: Icons.report_outlined,
+                label: 'Reportar un problema',
+                onTap: () => _faq('Reportar un problema',
+                    'Cuéntanos qué pasó con el botón "Enviar mensaje" e incluye detalles. Te responderemos lo más pronto posible.')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------- Nueva consulta ----------------
+class NewSupportThreadScreen extends StatefulWidget {
+  final Session session;
+  const NewSupportThreadScreen({super.key, required this.session});
+
+  @override
+  State<NewSupportThreadScreen> createState() => _NewSupportThreadScreenState();
+}
+
+class _NewSupportThreadScreenState extends State<NewSupportThreadScreen> {
+  String _kind = 'pregunta';
+  final _subject = TextEditingController();
+  final _message = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _subject.dispose();
+    _message.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final msg = _message.text.trim();
+    if (msg.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Escribe tu mensaje primero.')));
+      return;
+    }
+    setState(() => _sending = true);
+    try {
+      final t = await widget.session.api.createSupportThread(
+          kind: _kind,
+          subject: _subject.text.trim(),
+          message: msg);
+      if (!mounted) return;
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (_) => SupportChatScreen(
+                  session: widget.session,
+                  threadId: (t['id'] as num).toInt(),
+                  subject: (t['subject'] as String?) ?? '')));
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const kinds = ['pregunta', 'queja', 'sugerencia'];
+    const labels = {'pregunta': 'Pregunta', 'queja': 'Queja', 'sugerencia': 'Sugerencia'};
+    return Scaffold(
+      appBar: AppBar(title: const Text('Nueva consulta')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Center(
-            child: Column(children: [
-              Icon(Icons.support_agent, size: 64, color: SipiColors.primary),
-              SizedBox(height: 12),
-              Text('¿En qué podemos ayudarte?',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: SipiColors.text)),
-              Text('Nuestro equipo te responderá lo más\npronto posible.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: SipiColors.muted)),
-            ]),
-          ),
-          const SizedBox(height: 24),
-          const Text('Temas comunes',
-              style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  color: SipiColors.text)),
+          const Text('Tipo de mensaje',
+              style: TextStyle(fontWeight: FontWeight.w800, color: SipiColors.text)),
           const SizedBox(height: 10),
-          _MenuItem(
-              icon: Icons.task_outlined,
-              label: 'Problemas con tareas',
-              onTap: () => _faq(context, 'Problemas con tareas',
-                  'Si una tarea no se acredita, verifica que hayas completado todos los pasos y enviado la verificación. Las tareas manuales se revisan en un máximo de 48 horas.')),
-          _MenuItem(
-              icon: Icons.payments_outlined,
-              label: 'Pagos y recompensas',
-              onTap: () => _faq(context, 'Pagos y recompensas',
-                  'Puedes canjear tus puntos desde la pestaña Canjear cuando alcances el mínimo. Los pagos se procesan en 1 a 3 días hábiles.')),
-          _MenuItem(
-              icon: Icons.person_outline,
-              label: 'Mi cuenta',
-              onTap: () => _faq(context, 'Mi cuenta',
-                  'Puedes actualizar tu nombre, correo y contraseña desde Perfil > Editar perfil. Si no puedes entrar a tu cuenta, escríbenos con el botón de abajo.')),
-          _MenuItem(
-              icon: Icons.report_outlined,
-              label: 'Reportar un problema',
-              onTap: () => _faq(context, 'Reportar un problema',
-                  'Cuéntanos qué pasó con el botón "Enviar mensaje" e incluye capturas si es posible. Te responderemos lo más pronto posible.')),
+          Wrap(
+            spacing: 8,
+            children: kinds
+                .map((k) => ChoiceChip(
+                      label: Text(labels[k]!),
+                      selected: _kind == k,
+                      selectedColor: SipiColors.primary.withValues(alpha: 0.15),
+                      onSelected: (_) => setState(() => _kind = k),
+                    ))
+                .toList(),
+          ),
           const SizedBox(height: 16),
-          SipiButton(
-              label: 'Enviar mensaje',
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content:
-                        Text('Mensaje enviado. Te contactaremos pronto.')));
-              }),
+          const Text('Asunto (opcional)',
+              style: TextStyle(fontWeight: FontWeight.w800, color: SipiColors.text)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _subject,
+            decoration: const InputDecoration(hintText: 'Ej. No recibí mis puntos'),
+          ),
+          const SizedBox(height: 16),
+          const Text('Mensaje',
+              style: TextStyle(fontWeight: FontWeight.w800, color: SipiColors.text)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _message,
+            maxLines: 5,
+            decoration: const InputDecoration(
+                hintText: 'Cuéntanos qué pasó con el mayor detalle posible…'),
+          ),
+          const SizedBox(height: 20),
+          SipiButton(label: 'Enviar', loading: _sending, onPressed: _send),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------- Chat de soporte ----------------
+class SupportChatScreen extends StatefulWidget {
+  final Session session;
+  final int threadId;
+  final String subject;
+  const SupportChatScreen(
+      {super.key,
+      required this.session,
+      required this.threadId,
+      required this.subject});
+
+  @override
+  State<SupportChatScreen> createState() => _SupportChatScreenState();
+}
+
+class _SupportChatScreenState extends State<SupportChatScreen> {
+  List<Map<String, dynamic>> _messages = [];
+  String _status = 'open';
+  bool _loading = true;
+  bool _sending = false;
+  final _input = TextEditingController();
+  final _scroll = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _input.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final d = await widget.session.api.supportThread(widget.threadId);
+      if (!mounted) return;
+      setState(() {
+        _messages = ((d['messages'] as List?) ?? [])
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+        _status = (d['thread'] as Map?)?['status'] as String? ?? 'open';
+        _loading = false;
+      });
+      _toBottom();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        showError(context, e);
+      }
+    }
+  }
+
+  void _toBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scroll.hasClients) {
+        _scroll.animateTo(_scroll.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+      }
+    });
+  }
+
+  Future<void> _send() async {
+    final msg = _input.text.trim();
+    if (msg.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    try {
+      await widget.session.api.sendSupportMessage(widget.threadId, msg);
+      _input.clear();
+      await _load();
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+          title: Text(widget.subject.isNotEmpty ? widget.subject : 'Soporte')),
+      body: Column(
+        children: [
+          if (_status == 'closed')
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              color: SipiColors.muted.withValues(alpha: 0.15),
+              child: const Text('Esta conversación está cerrada.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: SipiColors.muted, fontSize: 13)),
+            ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: _messages.isEmpty
+                        ? ListView(children: const [
+                            SizedBox(height: 60),
+                            Center(
+                                child: Text('Sin mensajes.',
+                                    style: TextStyle(color: SipiColors.muted)))
+                          ])
+                        : ListView.builder(
+                            controller: _scroll,
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _messages.length,
+                            itemBuilder: (_, i) {
+                              final m = _messages[i];
+                              final mine = m['sender'] == 'user';
+                              return Align(
+                                alignment: mine
+                                    ? Alignment.centerRight
+                                    : Alignment.centerLeft,
+                                child: Container(
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 10),
+                                  constraints: BoxConstraints(
+                                      maxWidth:
+                                          MediaQuery.of(context).size.width *
+                                              0.75),
+                                  decoration: BoxDecoration(
+                                    color: mine
+                                        ? SipiColors.primary
+                                        : Colors.grey.shade200,
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: const Radius.circular(16),
+                                      topRight: const Radius.circular(16),
+                                      bottomLeft: Radius.circular(mine ? 16 : 4),
+                                      bottomRight:
+                                          Radius.circular(mine ? 4 : 16),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    (m['body'] as String?) ?? '',
+                                    style: TextStyle(
+                                        color: mine
+                                            ? Colors.white
+                                            : SipiColors.text,
+                                        height: 1.4),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+          ),
+          if (_status == 'open')
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _input,
+                        decoration: const InputDecoration(
+                            hintText: 'Escribe tu mensaje…'),
+                        onSubmitted: (_) => _send(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      icon: _sending
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.send),
+                      onPressed: _send,
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

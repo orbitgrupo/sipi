@@ -231,6 +231,29 @@
   .stat-n{flex:0 0 auto;color:var(--muted);font-weight:700;min-width:64px;text-align:right}
   .stat-avg{margin-top:8px;font-size:13px}
   .stat-samples{margin-top:8px;display:grid;gap:6px}
+  /* Soporte */
+  .sup-layout{display:grid;grid-template-columns:320px 1fr;gap:14px;min-height:480px}
+  .sup-list{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px;overflow:auto;max-height:640px}
+  .sup-thread{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:0;border-radius:10px;padding:10px;cursor:pointer}
+  .sup-thread:hover{background:#F4F6FB}
+  .sup-thread.active{background:#EEF2FF}
+  .sup-thread .grow{flex:1;min-width:0}
+  .sup-thread .cell-sub{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
+  .sup-thread.unread .cell-main{font-weight:800}
+  .sup-thread .dot{display:inline-block;width:8px;height:8px;border-radius:99px;background:var(--primary);margin-left:6px}
+  .sup-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+  .sup-chat{background:#fff;border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;min-height:480px}
+  .sup-chead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+  .sup-msgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px;max-height:480px;background:#F8FAFD}
+  .msg{max-width:75%}
+  .msg .bubble{background:#fff;border:1px solid var(--border);border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:13.5px;white-space:pre-wrap;word-break:break-word}
+  .msg.mine{align-self:flex-end}
+  .msg.mine .bubble{background:linear-gradient(135deg,var(--primary),#7C5CFF);color:#fff;border:0;border-radius:14px 14px 4px 14px}
+  .msg .mtime{font-size:11px;color:var(--muted);margin-top:3px}
+  .msg.mine .mtime{text-align:right}
+  .sup-reply{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--border)}
+  .sup-reply .in{flex:1}
+  @media(max-width:900px){.sup-layout{grid-template-columns:1fr}}
   @media(max-width:600px){.grid-f{grid-template-columns:1fr}}
 
   /* Toast */
@@ -349,6 +372,7 @@ const ICONS = {
   trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  soporte:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>',
 };
 
 const MENU = [
@@ -358,6 +382,7 @@ const MENU = [
   ['encuestas','Encuestas','Encuestas'],
   ['ofertas','Ofertas','Ofertas'],
   ['pagos','Pagos','Pagos y recompensas'],
+  ['soporte','Soporte','Soporte'],
   ['reportes','Reportes','Reportes'],
   ['config','Configuración','Configuración'],
 ];
@@ -415,7 +440,7 @@ function go(p){
   PAGE = p;
   document.querySelectorAll('#menu a').forEach(a => a.classList.toggle('active', a.dataset.p === p));
   ({panel:vPanel, usuarios:vUsuarios, tareas:vTareas, encuestas:vEncuestas, ofertas:vOfertas,
-    pagos:vPagos, reportes:vReportes, config:vConfig})[p]();
+    pagos:vPagos, soporte:vSoporte, reportes:vReportes, config:vConfig})[p]();
   refreshNotifs();
 }
 function pageHead(title, extra){
@@ -441,7 +466,8 @@ async function refreshNotifs(){
     const html = `<h4>Notificaciones</h4>` + (
       item(ICONS.tareas,'rgba(37,99,235,.18);color:#60A5FA','Tareas por revisar', n.pending_completions, "go('tareas');taskTab='rev';drawTasks();toggleNotifs(null,true)") +
       item(ICONS.pagos,'rgba(245,158,11,.18);color:#FBBF24','Pagos pendientes', n.pending_redemptions, "go('pagos');toggleNotifs(null,true)") +
-      item(ICONS.usuarios,'rgba(139,92,246,.18);color:#A78BFA','Usuarios por aprobar', n.pending_users, "go('usuarios');toggleNotifs(null,true)")
+      item(ICONS.usuarios,'rgba(139,92,246,.18);color:#A78BFA','Usuarios por aprobar', n.pending_users, "go('usuarios');toggleNotifs(null,true)") +
+      item(ICONS.soporte,'rgba(16,185,129,.18);color:#34D399','Mensajes de soporte', n.support_unread, "go('soporte');toggleNotifs(null,true)")
       || `<div class="notif-empty">Sin notificaciones pendientes.<br>Todo al día.</div>`);
     drop.innerHTML = html;
   } catch(e){ /* sin notificaciones si falla */ }
@@ -1021,6 +1047,124 @@ async function payAction(id, action){
   try { await req('POST',`/api/admin/redemptions/${id}/${action}`,{});
     toast(action==='complete'?'Pago marcado como completado.':'Canje rechazado, puntos devueltos.'); vPagos(); }
   catch(e){ toast('Error: '+friendlyErr(e), true); }
+}
+
+async function payAction(id, action){
+  const msg = action==='complete' ? '¿Confirmar que este pago fue enviado?' : '¿Rechazar el canje? Los puntos se devolverán al usuario.';
+  if(!confirm(msg)) return;
+  try { await req('POST',`/api/admin/redemptions/${id}/${action}`,{});
+    toast(action==='complete'?'Pago marcado como completado.':'Canje rechazado, puntos devueltos.'); vPagos(); }
+  catch(e){ toast('Error: '+friendlyErr(e), true); }
+}
+
+/* ============ SOPORTE ============ */
+let supportCache = [], supportOpenId = null, supportFilter = 'open', supportTimer = null;
+const KIND_LABEL = {pregunta:'Pregunta', queja:'Queja', sugerencia:'Sugerencia'};
+async function vSoporte(){
+  if (supportTimer) { clearInterval(supportTimer); supportTimer = null; }
+  supportOpenId = null;
+  const v = document.getElementById('view');
+  v.innerHTML = `<div class="loading">Cargando…</div>`;
+  try {
+    const {threads} = await req('GET','/api/admin/support/threads');
+    supportCache = threads;
+    v.innerHTML = `
+      ${pageHead('Soporte', `<select class="in" id="supFilter" onchange="supportFilter=this.value;supportOpenId=null;drawSupport()" style="max-width:180px">
+        <option value="open">Abiertos</option><option value="closed">Cerrados</option><option value="">Todos</option></select>`)}
+      <div class="sup-layout">
+        <div class="sup-list">
+          <div class="search" style="margin-bottom:10px">${ICONS.search}<input class="in" id="supQ" placeholder="Buscar chats…" oninput="drawSupport()"></div>
+          <div id="supThreads"></div>
+        </div>
+        <div class="sup-chat" id="supChat"><div class="empty">Selecciona una conversación<br>para ver los mensajes.</div></div>
+      </div>
+      <p class="note">Responde las preguntas y quejas de los usuarios aquí. Al responder, el caso se reabre automáticamente.</p>`;
+    drawSupport();
+    supportTimer = setInterval(() => { if (PAGE==='soporte') refreshSupport(false); }, 15000);
+  } catch(e){ v.innerHTML = `<p class="error">Error: ${h(friendlyErr(e))}</p>`; }
+}
+async function refreshSupport(keepOpen = true){
+  try {
+    const {threads} = await req('GET','/api/admin/support/threads');
+    supportCache = threads;
+    if (keepOpen && supportOpenId) await openSupportThread(supportOpenId, true);
+    else drawSupport();
+  } catch(e){ /* reintenta en el próximo ciclo */ }
+}
+function drawSupport(){
+  const q = (document.getElementById('supQ').value||'').toLowerCase();
+  const list = supportCache.filter(t =>
+    (!supportFilter || t.status === supportFilter) &&
+    ((t.user_name+' '+t.user_email+' '+t.subject).toLowerCase().includes(q)));
+  document.getElementById('supThreads').innerHTML = list.length ? list.map(t => `
+    <button class="sup-thread ${t.id===supportOpenId?'active':''} ${t.unread_admin?'unread':''}" onclick="openSupportThread(${t.id})">
+      <span class="avatar-sm" style="background:${avatarColor(t.user_name)}">${h(initial(t.user_name))}</span>
+      <span class="grow"><span class="cell-main">${h(t.user_name)} ${t.unread_admin?'<span class="dot"></span>':''}</span>
+        <span class="cell-sub">${h(t.subject)} · ${h((t.last_message||'').slice(0,50))}</span></span>
+      <span class="sup-meta"><span class="pill ${t.kind==='queja'?'bad':(t.kind==='sugerencia'?'info':'warn')}">${KIND_LABEL[t.kind]||t.kind}</span>
+        <span class="cell-sub">${timeAgo(t.updated_at)}</span></span>
+    </button>`).join('')
+    : `<div class="empty">Sin conversaciones.</div>`;
+}
+async function openSupportThread(id, silent){
+  supportOpenId = id;
+  drawSupport();
+  const chat = document.getElementById('supChat');
+  if (!silent) chat.innerHTML = `<div class="loading">Cargando…</div>`;
+  try {
+    const {thread, messages} = await req('GET',`/api/admin/support/threads/${id}`);
+    const t = supportCache.find(x => x.id===id);
+    if (t) t.unread_admin = false;
+    chat.innerHTML = `
+      <div class="sup-chead">
+        <div><div class="cell-main">${h(thread.user_name)} <span class="pill ${thread.status==='open'?'ok':'bad'}">${thread.status==='open'?'Abierto':'Cerrado'}</span></div>
+        <div class="cell-sub">${h(thread.user_email)} · ${KIND_LABEL[thread.kind]||thread.kind} · ${h(thread.subject)}</div></div>
+        <button class="btn ${thread.status==='open'?'ghost':'ok'} sm" onclick="toggleSupportStatus(${id},'${thread.status}')">${thread.status==='open'?'Cerrar caso':'Reabrir'}</button>
+      </div>
+      <div class="sup-msgs" id="supMsgs">${messages.map(m => `
+        <div class="msg ${m.sender==='admin'?'mine':''}"><div class="bubble">${h(m.body)}</div>
+          <div class="mtime">${fmtTime(m.created_at)}</div></div>`).join('') || '<div class="empty">Sin mensajes.</div>'}</div>
+      <div class="sup-reply">
+        <input class="in" id="supInput" placeholder="Escribe tu respuesta…" onkeydown="if(event.key==='Enter')sendSupportReply(${id})">
+        <button class="btn primary" onclick="sendSupportReply(${id})">Enviar</button>
+      </div>`;
+    const box = document.getElementById('supMsgs');
+    box.scrollTop = box.scrollHeight;
+    refreshNotifs();
+  } catch(e){ chat.innerHTML = `<p class="error">Error: ${h(friendlyErr(e))}</p>`; }
+}
+async function sendSupportReply(id){
+  const inp = document.getElementById('supInput');
+  const body = (inp.value||'').trim();
+  if (!body) return;
+  inp.value = '';
+  try {
+    await req('POST',`/api/admin/support/threads/${id}/messages`,{message:body});
+    await openSupportThread(id, true);
+    refreshSupport(true);
+  } catch(e){ toast('Error: '+friendlyErr(e), true); inp.value = body; }
+}
+async function toggleSupportStatus(id, current){
+  const next = current === 'open' ? 'closed' : 'open';
+  if (next === 'closed' && !confirm('¿Cerrar este caso? El usuario ya no podrá responder.')) return;
+  try {
+    await req('PATCH',`/api/admin/support/threads/${id}`,{status:next});
+    toast(next === 'closed' ? 'Caso cerrado.' : 'Caso reabierto.');
+    await refreshSupport(true);
+  } catch(e){ toast('Error: '+friendlyErr(e), true); }
+}
+function timeAgo(ts){
+  const d = new Date(String(ts).replace(' ','T'));
+  if (isNaN(d)) return '';
+  const s = Math.floor((Date.now()-d.getTime())/1000);
+  if (s < 60) return 'ahora';
+  if (s < 3600) return Math.floor(s/60)+' min';
+  if (s < 86400) return Math.floor(s/3600)+' h';
+  return Math.floor(s/86400)+' d';
+}
+function fmtTime(ts){
+  const d = new Date(String(ts).replace(' ','T'));
+  return isNaN(d) ? '' : d.toLocaleString('es',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 }
 
 /* ============ REPORTES ============ */

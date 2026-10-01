@@ -22,6 +22,59 @@ const { supabaseAdmin } = require('./supabase');
 
 const SCHEMA = 'sipi_dev';
 
+// ─────────────────────────────────────────────
+// SOPORTE — las tablas se crean solas al arrancar
+// ─────────────────────────────────────────────
+
+async function ensureSupportTables(db) {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS ${SCHEMA}.support_threads (
+      id BIGSERIAL PRIMARY KEY,
+      user_id UUID NOT NULL,
+      subject TEXT NOT NULL DEFAULT '',
+      kind TEXT NOT NULL DEFAULT 'pregunta',
+      status TEXT NOT NULL DEFAULT 'open',
+      unread_admin BOOLEAN NOT NULL DEFAULT TRUE,
+      unread_user BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`);
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS ${SCHEMA}.support_messages (
+      id BIGSERIAL PRIMARY KEY,
+      thread_id BIGINT NOT NULL REFERENCES ${SCHEMA}.support_threads(id) ON DELETE CASCADE,
+      sender TEXT NOT NULL,
+      body TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_support_threads_user ON ${SCHEMA}.support_threads(user_id)`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_support_messages_thread ON ${SCHEMA}.support_messages(thread_id)`);
+}
+
+function serializeThread(t) {
+  return {
+    id: Number(t.id),
+    user_id: t.user_id,
+    subject: t.subject || '',
+    kind: t.kind || 'pregunta',
+    status: t.status || 'open',
+    unread_admin: !!t.unread_admin,
+    unread_user: !!t.unread_user,
+    created_at: t.created_at,
+    updated_at: t.updated_at,
+  };
+}
+
+function serializeSupportMessage(m) {
+  return {
+    id: Number(m.id),
+    thread_id: Number(m.thread_id),
+    sender: m.sender,
+    body: m.body,
+    created_at: m.created_at,
+  };
+}
+
 function asyncRoute(fn) {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
@@ -132,6 +185,11 @@ async function lockProfile(client, userId) {
 function createApp(db) {
   const app = express();
   const requireAdmin = makeRequireAdmin(db);
+
+  // Crea las tablas de soporte si aún no existen (idempotente).
+  ensureSupportTables(db).catch((e) =>
+    console.error('[sipi] No se pudieron crear las tablas de soporte:', e.message)
+  );
 
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' }));
@@ -806,6 +864,132 @@ function createApp(db) {
   }));
 
   // ─────────────────────────────────────────────
+  // SOPORTE — conversaciones del usuario
+  // ─────────────────────────────────────────────
+
+  const SUPPORT_KINDS = ['pregunta', 'queja', 'sugerencia'];
+
+  app.get('/api/support/threads', requireAuth, asyncRoute(async (req, res) => {
+    const result = await db.query(
+      `SELECT t.*,
+              (SELECT m.body FROM ${SCHEMA}.support_messages m
+                WHERE m.thread_id = t.id ORDER BY m.id DESC LIMIT 1) AS last_message
+         FROM ${SCHEMA}.support_threads t
+        WHERE t.user_id = $1
+        ORDER BY t.updated_at DESC`,
+      [req.user.id]
+    );
+
+    return res.json({
+      threads: result.rows.map((t) => ({
+        ...serializeThread(t),
+        last_message: t.last_message || '',
+      })),
+    });
+  }));
+
+  app.post('/api/support/threads', requireAuth, asyncRoute(async (req, res) => {
+    const subject = String(req.body?.subject || '').trim().slice(0, 120);
+    const kind = String(req.body?.kind || 'pregunta');
+    const message = String(req.body?.message || '').trim();
+
+    if (!SUPPORT_KINDS.includes(kind)) {
+      throw httpError(400, 'INVALID_KIND');
+    }
+
+    if (!message) {
+      throw httpError(400, 'MESSAGE_REQUIRED');
+    }
+
+    const thread = await db.withTransaction(async (client) => {
+      const t = await client.query(
+        `INSERT INTO ${SCHEMA}.support_threads (user_id, subject, kind, unread_admin)
+         VALUES ($1, $2, $3, true)
+         RETURNING *`,
+        [req.user.id, subject || message.slice(0, 60), kind]
+      );
+
+      await client.query(
+        `INSERT INTO ${SCHEMA}.support_messages (thread_id, sender, body)
+         VALUES ($1, 'user', $2)`,
+        [t.rows[0].id, message]
+      );
+
+      return t.rows[0];
+    });
+
+    return res.status(201).json({ thread: serializeThread(thread) });
+  }));
+
+  app.get('/api/support/threads/:id', requireAuth, asyncRoute(async (req, res) => {
+    const threadId = asInt(req.params.id);
+
+    const t = await db.query(
+      `SELECT * FROM ${SCHEMA}.support_threads WHERE id = $1 AND user_id = $2`,
+      [threadId, req.user.id]
+    );
+
+    if (!t.rowCount) {
+      throw httpError(404, 'THREAD_NOT_FOUND');
+    }
+
+    const msgs = await db.query(
+      `SELECT * FROM ${SCHEMA}.support_messages WHERE thread_id = $1 ORDER BY id ASC`,
+      [threadId]
+    );
+
+    await db.query(
+      `UPDATE ${SCHEMA}.support_threads SET unread_user = false WHERE id = $1`,
+      [threadId]
+    );
+
+    return res.json({
+      thread: serializeThread(t.rows[0]),
+      messages: msgs.rows.map(serializeSupportMessage),
+    });
+  }));
+
+  app.post('/api/support/threads/:id/messages', requireAuth, asyncRoute(async (req, res) => {
+    const threadId = asInt(req.params.id);
+    const message = String(req.body?.message || '').trim();
+
+    if (!message) {
+      throw httpError(400, 'MESSAGE_REQUIRED');
+    }
+
+    const t = await db.query(
+      `SELECT * FROM ${SCHEMA}.support_threads WHERE id = $1 AND user_id = $2`,
+      [threadId, req.user.id]
+    );
+
+    const thread = t.rows[0];
+
+    if (!thread) {
+      throw httpError(404, 'THREAD_NOT_FOUND');
+    }
+
+    if (thread.status !== 'open') {
+      throw httpError(409, 'THREAD_CLOSED');
+    }
+
+    const m = await db.query(
+      `INSERT INTO ${SCHEMA}.support_messages (thread_id, sender, body)
+       VALUES ($1, 'user', $2)
+       RETURNING *`,
+      [threadId, message]
+    );
+
+    await db.query(
+      `UPDATE ${SCHEMA}.support_threads
+          SET unread_admin = true, updated_at = now()
+        WHERE id = $1`,
+      [threadId]
+    );
+
+    return res.status(201).json({ message: serializeSupportMessage(m.rows[0]) });
+  }));
+
+  // ─────────────────────────────────────────────
   // CANJES
   // ─────────────────────────────────────────────
 
@@ -993,11 +1177,21 @@ function createApp(db) {
     const pending_redemptions = red.rows[0].total;
     const pending_users = usr.rows[0].total;
 
+    // Chats de soporte sin leer (la tabla se crea sola al arrancar).
+    let support_unread = 0;
+    try {
+      const sup = await db.query(
+        `SELECT COUNT(*)::int AS total FROM ${SCHEMA}.support_threads WHERE unread_admin = true`
+      );
+      support_unread = sup.rows[0].total;
+    } catch (e) { /* tabla aún no creada */ }
+
     return res.json({
       pending_completions,
       pending_redemptions,
       pending_users,
-      total: pending_completions + pending_redemptions + pending_users,
+      support_unread,
+      total: pending_completions + pending_redemptions + pending_users + support_unread,
     });
   }));
 
@@ -1460,6 +1654,128 @@ function createApp(db) {
       total_responses: responses.length,
       questions: stats,
     });
+  }));
+
+  // ─────────────────────────────────────────────
+  // ADMIN — soporte: administrar chats, preguntas y quejas
+  // ─────────────────────────────────────────────
+
+  app.get('/api/admin/support/threads', requireAuth, requireAdmin, asyncRoute(async (_req, res) => {
+    const result = await db.query(
+      `SELECT t.*,
+              p.name AS user_name,
+              p.email AS user_email,
+              (SELECT m.body FROM ${SCHEMA}.support_messages m
+                WHERE m.thread_id = t.id ORDER BY m.id DESC LIMIT 1) AS last_message,
+              (SELECT COUNT(*)::int FROM ${SCHEMA}.support_messages m
+                WHERE m.thread_id = t.id) AS message_count
+         FROM ${SCHEMA}.support_threads t
+         LEFT JOIN ${SCHEMA}.profiles p ON p.id = t.user_id
+        ORDER BY t.unread_admin DESC, t.updated_at DESC`
+    );
+
+    return res.json({
+      threads: result.rows.map((t) => ({
+        ...serializeThread(t),
+        user_name: t.user_name || 'Usuario',
+        user_email: t.user_email || '',
+        last_message: t.last_message || '',
+        message_count: t.message_count || 0,
+      })),
+    });
+  }));
+
+  app.get('/api/admin/support/threads/:id', requireAuth, requireAdmin, asyncRoute(async (req, res) => {
+    const threadId = asInt(req.params.id);
+
+    const t = await db.query(
+      `SELECT t.*, p.name AS user_name, p.email AS user_email
+         FROM ${SCHEMA}.support_threads t
+         LEFT JOIN ${SCHEMA}.profiles p ON p.id = t.user_id
+        WHERE t.id = $1`,
+      [threadId]
+    );
+
+    if (!t.rowCount) {
+      throw httpError(404, 'THREAD_NOT_FOUND');
+    }
+
+    const msgs = await db.query(
+      `SELECT * FROM ${SCHEMA}.support_messages WHERE thread_id = $1 ORDER BY id ASC`,
+      [threadId]
+    );
+
+    await db.query(
+      `UPDATE ${SCHEMA}.support_threads SET unread_admin = false WHERE id = $1`,
+      [threadId]
+    );
+
+    return res.json({
+      thread: {
+        ...serializeThread(t.rows[0]),
+        user_name: t.rows[0].user_name || 'Usuario',
+        user_email: t.rows[0].user_email || '',
+      },
+      messages: msgs.rows.map(serializeSupportMessage),
+    });
+  }));
+
+  app.post('/api/admin/support/threads/:id/messages', requireAuth, requireAdmin, asyncRoute(async (req, res) => {
+    const threadId = asInt(req.params.id);
+    const message = String(req.body?.message || '').trim();
+
+    if (!message) {
+      throw httpError(400, 'MESSAGE_REQUIRED');
+    }
+
+    const t = await db.query(
+      `SELECT id FROM ${SCHEMA}.support_threads WHERE id = $1`,
+      [threadId]
+    );
+
+    if (!t.rowCount) {
+      throw httpError(404, 'THREAD_NOT_FOUND');
+    }
+
+    const m = await db.query(
+      `INSERT INTO ${SCHEMA}.support_messages (thread_id, sender, body)
+       VALUES ($1, 'admin', $2)
+       RETURNING *`,
+      [threadId, message]
+    );
+
+    // Responder reabre el caso y avisa al usuario.
+    await db.query(
+      `UPDATE ${SCHEMA}.support_threads
+          SET unread_user = true, updated_at = now(), status = 'open'
+        WHERE id = $1`,
+      [threadId]
+    );
+
+    return res.status(201).json({ message: serializeSupportMessage(m.rows[0]) });
+  }));
+
+  app.patch('/api/admin/support/threads/:id', requireAuth, requireAdmin, asyncRoute(async (req, res) => {
+    const threadId = asInt(req.params.id);
+    const status = String(req.body?.status || '');
+
+    if (!['open', 'closed'].includes(status)) {
+      throw httpError(400, 'INVALID_STATUS');
+    }
+
+    const r = await db.query(
+      `UPDATE ${SCHEMA}.support_threads
+          SET status = $1, updated_at = now()
+        WHERE id = $2
+        RETURNING *`,
+      [status, threadId]
+    );
+
+    if (!r.rowCount) {
+      throw httpError(404, 'THREAD_NOT_FOUND');
+    }
+
+    return res.json({ thread: serializeThread(r.rows[0]) });
   }));
 
   // ─────────────────────────────────────────────
