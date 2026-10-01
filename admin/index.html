@@ -581,9 +581,9 @@ function drawUsers(){
     <td><b>${fmtInt(u.points)}</b></td><td>${u.level}</td>
     <td>${!u.approved ? '<span class="pill warn">Pendiente</span>' : (u.status==='active' ? '<span class="pill ok">Activo</span>' : '<span class="pill bad">Inactivo</span>')}</td>
     <td><div class="row-actions">
-      ${!u.approved ? `<button class="btn sm ok" onclick="approveUser(${u.id})">Aprobar</button>` : ''}
-      <button class="btn sm ${u.role==='admin'?'ghost':'ok'}" onclick="setRole(${u.id},'${u.role==='admin'?'user':'admin'}')">${u.role==='admin'?'Quitar admin':'Hacer admin'}</button>
-      <button class="btn sm ${u.status==='active'?'bad':'ok'}" onclick="setStatus(${u.id},'${u.status==='active'?'inactive':'active'}')">${u.status==='active'?'Desactivar':'Activar'}</button>
+      ${!u.approved ? `<button class="btn sm ok" onclick="approveUser('${u.id}')">Aprobar</button>` : ''}
+      <button class="btn sm ${u.role==='admin'?'ghost':'ok'}" onclick="setRole('${u.id}','${u.role==='admin'?'user':'admin'}')">${u.role==='admin'?'Quitar admin':'Hacer admin'}</button>
+      <button class="btn sm ${u.status==='active'?'bad':'ok'}" onclick="setStatus('${u.id}','${u.status==='active'?'inactive':'active'}')">${u.status==='active'?'Desactivar':'Activar'}</button>
     </div></td></tr>`).join('')
     : `<tr><td colspan="5"><div class="empty">Sin resultados.</div></td></tr>`;
 }
