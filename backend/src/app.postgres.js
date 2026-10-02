@@ -66,6 +66,39 @@ async function ensureSupportTables(db) {
   } catch (e) {
     console.error('[sipi] No se pudo agregar image_url a tasks:', e.message);
   }
+  // Límite de usuarios por tarea (0 = sin límite). Al alcanzarlo, se desactiva.
+  try {
+    await db.query(`ALTER TABLE ${SCHEMA}.tasks ADD COLUMN IF NOT EXISTS max_users INTEGER NOT NULL DEFAULT 0`);
+  } catch (e) {
+    console.error('[sipi] No se pudo agregar max_users a tasks:', e.message);
+  }
+}
+
+// Desactiva la tarea cuando se alcanza su límite de usuarios (max_users > 0).
+// Cuenta usuarios distintos con la tarea aprobada. Devuelve true si la desactivó.
+async function enforceUserLimit(client, taskId) {
+  const t = await client.query(
+    `SELECT max_users FROM ${SCHEMA}.tasks WHERE id = $1`,
+    [taskId]
+  );
+  const maxUsers = t.rows[0] ? parseInt(t.rows[0].max_users, 10) || 0 : 0;
+  if (!maxUsers) return false;
+
+  const c = await client.query(
+    `SELECT COUNT(DISTINCT user_id)::int AS n
+       FROM ${SCHEMA}.task_completions
+      WHERE task_id = $1 AND status = 'approved'`,
+    [taskId]
+  );
+
+  if (c.rows[0].n >= maxUsers) {
+    await client.query(
+      `UPDATE ${SCHEMA}.tasks SET active = false, updated_at = now() WHERE id = $1`,
+      [taskId]
+    );
+    return true;
+  }
+  return false;
 }
 
 function serializeThread(t) {
@@ -973,6 +1006,9 @@ function createApp(db) {
         await checkAndAward(client, req.user.id);
 
         autoApproved = true;
+
+        // Si la tarea tenía límite de usuarios y se alcanzó, se desactiva.
+        await enforceUserLimit(client, taskId);
       }
 
       return {
@@ -1476,6 +1512,10 @@ function createApp(db) {
     const maxCompletions = asInt(req.body?.max_completions_per_user, 1);
     const socialNetwork = req.body?.social_network || null;
     const socialAction = req.body?.social_action || null;
+    const maxUsers = asInt(req.body?.max_users, 0);
+    if (!Number.isInteger(maxUsers) || maxUsers < 0) {
+      throw httpError(400, 'INVALID_MAX_USERS');
+    }
     let imageUrl = String(req.body?.image_url || '').trim();
     // Si es tarea de red social y no se eligió imagen, usa el logo de la red.
     const networks = [
@@ -1520,9 +1560,9 @@ function createApp(db) {
          (title, description, instructions, category, points,
           estimated_minutes, verification, requirements, target_url,
           max_completions_per_user, social_network, social_action,
-          image_url, created_by)
+          image_url, max_users, created_by)
        VALUES
-         ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+         ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
        RETURNING *`,
       [
         title,
@@ -1538,6 +1578,7 @@ function createApp(db) {
         socialNetwork,
         socialAction,
         imageUrl,
+        maxUsers,
         req.user.id,
       ]
     );
@@ -1569,6 +1610,7 @@ function createApp(db) {
       social_network: 'nullable',
       social_action: 'nullable',
       image_url: 'text',
+      max_users: 'int0',
     };
 
     const updates = [];
@@ -1583,6 +1625,14 @@ function createApp(db) {
         value = asInt(value);
 
         if (!value || value <= 0) {
+          throw httpError(400, 'INVALID_VALUE');
+        }
+      }
+
+      if (type === 'int0') {
+        value = asInt(value, -1);
+
+        if (!Number.isInteger(value) || value < 0) {
           throw httpError(400, 'INVALID_VALUE');
         }
       }
@@ -2034,6 +2084,9 @@ function createApp(db) {
       });
 
       await checkAndAward(client, row.user_id);
+
+      // Si la tarea tenía límite de usuarios y se alcanzó, se desactiva.
+      await enforceUserLimit(client, row.task_id);
 
       const updated = await client.query(
         `SELECT *

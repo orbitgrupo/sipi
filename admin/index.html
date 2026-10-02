@@ -777,6 +777,9 @@ function taskModal(id, presetCat){
       <div><label class="f">Minutos estimados</label><input class="in" id="f_min" type="number" min="1" value="${t.estimated_minutes||5}"></div>
       <div><label class="f">Máx. por usuario</label><input class="in" id="f_max" type="number" min="1" value="${t.max_completions_per_user||1}"></div>
     </div>
+    <label class="f">Límite de usuarios <span style="font-weight:400;color:var(--muted)">(0 = sin límite)</span></label>
+    <input class="in" id="f_maxu" type="number" min="0" value="${t.max_users||0}">
+    <p class="hint">Cuando esa cantidad de usuarios complete la tarea, se desactiva automáticamente.</p>
     <label class="f">Verificación</label><select class="in" id="f_ver">
       ${['manual','auto','survey'].map(vv => `<option value="${vv}" ${t.verification===vv?'selected':''}>${{manual:'Manual (revisión)',auto:'Automática',survey:'Encuesta'}[vv]}</option>`).join('')}
     </select>
@@ -817,7 +820,7 @@ async function saveTask(id){
     max_completions_per_user:parseInt(f_max.value)||1, verification:f_ver.value,
     requirements:f_req.value.trim(), target_url:f_url.value.trim(),
     social_network:f_net.value||null, social_action:f_net.value?(f_act.value||null):null,
-    image_url:taskImgSel,
+    image_url:taskImgSel, max_users:parseInt(f_maxu.value)||0,
   };
   if(!body.title || body.points < 1){ err.textContent='Título y puntos (mínimo 1) son obligatorios.'; return; }
   try {
@@ -937,6 +940,9 @@ function surveyCreateModal(){
     <label class="f">Descripción</label><textarea class="in" id="sc_desc" rows="2" placeholder="Describe de qué trata la encuesta"></textarea>
     <div class="grid-f"><div><label class="f">Puntos al completarla</label><input class="in" id="sc_pts" type="number" min="1" value="25"></div>
     <div><label class="f">Minutos estimados</label><input class="in" id="sc_min" type="number" min="1" value="5"></div></div>
+    <label class="f">Límite de usuarios <span style="font-weight:400;color:var(--muted)">(0 = sin límite)</span></label>
+    <input class="in" id="sc_maxu" type="number" min="0" value="0">
+    <p class="hint">Cuando esa cantidad de usuarios complete la encuesta, se desactiva automáticamente.</p>
     <label class="f">Título de la encuesta</label><input class="in" id="sv_title" value="Encuesta">
     <div id="qList"></div>
     <button class="btn ghost sm" style="margin-top:12px" onclick="addQ()">${ICONS.plus} Agregar pregunta</button>
@@ -966,7 +972,8 @@ async function saveSurveyCreate(){
   if (questions.some(q => !q.text)){ err.textContent='Todas las preguntas necesitan texto.'; return; }
   try {
     const {task} = await req('POST','/api/admin/tasks',{title, description, category:'encuestas',
-      points, estimated_minutes:minutes, max_completions_per_user:1, verification:'auto'});
+      points, estimated_minutes:minutes, max_completions_per_user:1, verification:'auto',
+      max_users:parseInt(document.getElementById('sc_maxu').value)||0});
     await req('PUT',`/api/admin/tasks/${task.id}`,{verification:'survey'});
     await req('POST',`/api/admin/tasks/${task.id}/survey`,{title:document.getElementById('sv_title').value.trim()||'Encuesta', questions});
     closeModal(); toast('Encuesta creada.'); vEncuestas();
