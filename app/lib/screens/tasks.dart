@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:confetti/confetti.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/theme.dart';
 import '../core/session.dart';
 import '../core/models.dart';
@@ -692,13 +693,31 @@ class _SocialHandleFormState extends State<_SocialHandleForm> {
     super.dispose();
   }
 
-  void _go() {
+  void _go() async {
     final handle = _ctrl.text.trim().replaceAll(RegExp(r'^@+'), '');
     if (handle.isEmpty) {
       setState(() => _error = 'Escribe tu usuario de ${socialNetworkName(widget.task.socialNetwork)}.');
       return;
     }
     setState(() => _error = null);
+    // Abre el enlace que puso el admin (la app de la red social si está
+    // instalada, o el navegador) para que el usuario complete la acción.
+    final raw = widget.task.targetUrl.trim();
+    if (raw.isNotEmpty) {
+      final uri = Uri.tryParse(
+          raw.startsWith(RegExp(r'https?://', caseSensitive: false))
+              ? raw
+              : 'https://$raw');
+      if (uri != null) {
+        final opened =
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!opened && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text(
+                  'No se pudo abrir el enlace. Cópialo desde el detalle de la tarea.')));
+        }
+      }
+    }
     widget.onSubmit(handle);
   }
 
@@ -803,7 +822,9 @@ class _SocialHandleFormState extends State<_SocialHandleForm> {
         ),
         const SizedBox(height: 20),
         SipiButton(
-            label: 'Enviar para verificar',
+            label: widget.task.targetUrl.trim().isNotEmpty
+                ? 'Abrir y enviar para verificar'
+                : 'Enviar para verificar',
             loading: widget.sending,
             onPressed: _go),
       ],
