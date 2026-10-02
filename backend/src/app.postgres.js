@@ -926,18 +926,25 @@ function createApp(db) {
         }
       }
 
+      // Nota: no se usa ON CONFLICT porque la restricción UNIQUE(survey_id, user_id)
+      // puede no existir en la base migrada a Postgres; se verifica con SELECT
+      // dentro de la transacción (el perfil ya está bloqueado con lockProfile).
+      const existingResponse = await client.query(
+        `SELECT id FROM ${SCHEMA}.survey_responses WHERE survey_id = $1 AND user_id = $2`,
+        [survey.id, req.user.id]
+      );
+
+      if (existingResponse.rowCount > 0) {
+        throw httpError(409, 'SURVEY_ALREADY_ANSWERED');
+      }
+
       const responseResult = await client.query(
         `INSERT INTO ${SCHEMA}.survey_responses
            (survey_id, user_id, answers)
          VALUES ($1, $2, $3::jsonb)
-         ON CONFLICT (survey_id, user_id) DO NOTHING
          RETURNING *`,
         [survey.id, req.user.id, JSON.stringify(answers)]
       );
-
-      if (!responseResult.rowCount) {
-        throw httpError(409, 'SURVEY_ALREADY_ANSWERED');
-      }
 
       let autoApproved = false;
 
