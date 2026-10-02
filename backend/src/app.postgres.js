@@ -72,6 +72,40 @@ async function ensureSupportTables(db) {
   } catch (e) {
     console.error('[sipi] No se pudo agregar max_users a tasks:', e.message);
   }
+  // La verificación 'survey' nació después de la migración a Postgres: el CHECK
+  // original de tasks.verification solo permitía 'manual'/'auto' y la base
+  // rechaza verification='survey' (el panel muestra INVALID_VALUE y la encuesta
+  // nunca queda marcada). Se corrige de forma idempotente al arrancar.
+  try {
+    await db.query(`
+      DO $$
+      DECLARE
+        cname text;
+      BEGIN
+        FOR cname IN
+          SELECT conname
+            FROM pg_constraint
+           WHERE conrelid = '${SCHEMA}.tasks'::regclass
+             AND contype = 'c'
+             AND pg_get_constraintdef(oid) ILIKE '%verification%'
+             AND pg_get_constraintdef(oid) NOT ILIKE '%survey%'
+        LOOP
+          EXECUTE format('ALTER TABLE ${SCHEMA}.tasks DROP CONSTRAINT %I', cname);
+        END LOOP;
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+           WHERE conrelid = '${SCHEMA}.tasks'::regclass
+             AND conname = 'tasks_verification_check'
+        ) THEN
+          ALTER TABLE ${SCHEMA}.tasks
+            ADD CONSTRAINT tasks_verification_check
+            CHECK (verification IN ('manual','auto','survey'));
+        END IF;
+      END $$;
+    `);
+  } catch (e) {
+    console.error('[sipi] No se pudo actualizar el CHECK de verification en tasks:', e.message);
+  }
 }
 
 // Desactiva la tarea cuando se alcanza su límite de usuarios (max_users > 0).
@@ -1539,7 +1573,7 @@ function createApp(db) {
       throw httpError(400, 'INVALID_CATEGORY');
     }
 
-    if (!['manual', 'auto'].includes(verification)) {
+    if (!['manual', 'auto', 'survey'].includes(verification)) {
       throw httpError(400, 'INVALID_VERIFICATION');
     }
 

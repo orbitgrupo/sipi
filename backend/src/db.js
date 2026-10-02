@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   category TEXT NOT NULL DEFAULT 'otras' CHECK(category IN ('social','encuestas','productos','opinion','promociones','otras')),
   points INTEGER NOT NULL CHECK(points > 0),
   estimated_minutes INTEGER NOT NULL DEFAULT 5,
-  verification TEXT NOT NULL DEFAULT 'manual' CHECK(verification IN ('manual','auto')),
+  verification TEXT NOT NULL DEFAULT 'manual' CHECK(verification IN ('manual','auto','survey')),
   requirements TEXT NOT NULL DEFAULT '',
   target_url TEXT NOT NULL DEFAULT '',
   max_completions_per_user INTEGER NOT NULL DEFAULT 1,
