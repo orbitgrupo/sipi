@@ -97,7 +97,6 @@ async function main() {
   }
 
   // Columna de imagen (por si el seed corre antes que el arranque del API).
-  await db.query(`ALTER TABLE ${SCHEMA}.tasks ADD COLUMN IF NOT EXISTS image_url TEXT NOT NULL DEFAULT ''`);
 
   for (const t of TASKS) {
     const exists = await db.query(
