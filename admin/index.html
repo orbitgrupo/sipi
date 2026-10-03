@@ -404,6 +404,11 @@ async function req(method, path, body) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const j = await r.json().catch(() => ({}));
+  if (r.status === 401 && TOKEN && !path.startsWith('/api/auth/')) {
+    // Sesión vencida o cerrada en otro lado: volver al inicio automáticamente.
+    logout();
+    throw new Error('SESSION_EXPIRED');
+  }
   if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
   return j;
 }
@@ -417,6 +422,7 @@ function toast(msg, err) {
 }
 const friendlyErr = (e) => ({
   EMAIL_TAKEN:'Ese correo ya está registrado.', INVALID_CREDENTIALS:'Credenciales incorrectas.',
+  SESSION_EXPIRED:'Tu sesión venció. Entra de nuevo.',
   WEAK_PASSWORD:'La contraseña debe tener al menos 6 caracteres.',
 }[e.message] || e.message);
 
@@ -434,6 +440,7 @@ async function doLogin() {
 function logout(){
   TOKEN=''; localStorage.removeItem('sipi_admin_token');
   if (notifTimer) { clearInterval(notifTimer); notifTimer = null; }
+  PAGE = 'panel'; // al cerrar sesión se vuelve a la página de inicio
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login').style.display='flex';
 }
