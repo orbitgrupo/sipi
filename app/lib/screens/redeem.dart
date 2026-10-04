@@ -95,7 +95,7 @@ class _RedeemScreenState extends State<RedeemScreen> {
                         : Clay.card(),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(SipiRadii.lg),
-                      onTap: affordable ? () => setState(() => _sel = i) : null,
+                      onTap: affordable ? () => setState(() => _selectedPoints = o.pts) : null,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
