@@ -23,10 +23,10 @@ RUN git config --global --add safe.directory /opt/flutter \
 
 WORKDIR /app
 
-COPY pubspec.yaml pubspec.lock ./
+COPY app/pubspec.yaml ./
 RUN flutter pub get
 
-COPY . .
+COPY app/ .
 
 RUN flutter build web --release
 
