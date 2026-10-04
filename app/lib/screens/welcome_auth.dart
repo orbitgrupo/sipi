@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../core/session.dart';
 import '../widgets/common.dart';
+import 'profile.dart';
 
 class WelcomeScreen extends StatelessWidget {
   final Session session;
