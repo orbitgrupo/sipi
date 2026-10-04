@@ -92,7 +92,7 @@ async function checkAndAward(db, userId) {
       `INSERT INTO ${SCHEMA}.user_achievements
          (user_id, achievement_id)
        VALUES ($1, $2)
-       ON CONFLICT (user_id, achievement_id) DO NOTHING
+       ON CONFLICT DO NOTHING
        RETURNING achievement_id`,
       [userId, achievement.id]
     );

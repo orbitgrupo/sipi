@@ -110,11 +110,19 @@ async function ensureSupportTables(db) {
 
 // Desactiva la tarea cuando se alcanza su límite de usuarios (max_users > 0).
 // Cuenta usuarios distintos con la tarea aprobada. Devuelve true si la desactivó.
+// Es defensivo: si la columna max_users aún no existe en la base, no rompe
+// la aprobación (solo registra el aviso en el log del servidor).
 async function enforceUserLimit(client, taskId) {
-  const t = await client.query(
-    `SELECT max_users FROM ${SCHEMA}.tasks WHERE id = $1`,
-    [taskId]
-  );
+  let t;
+  try {
+    t = await client.query(
+      `SELECT max_users FROM ${SCHEMA}.tasks WHERE id = $1`,
+      [taskId]
+    );
+  } catch (e) {
+    console.error('[sipi] enforceUserLimit:', e.message);
+    return false;
+  }
   const maxUsers = t.rows[0] ? parseInt(t.rows[0].max_users, 10) || 0 : 0;
   if (!maxUsers) return false;
 
