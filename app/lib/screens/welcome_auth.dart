@@ -23,25 +23,12 @@ class WelcomeScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       const Spacer(),
-                      // Logo sin fotografía de personas: insignia con gradiente + marca.
+                      // Logo sin fotografía de personas: insignia clay + marca.
                       Container(
-                        width: 92,
-                        height: 92,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [SipiColors.primaryLight, SipiColors.primaryDark],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(28),
-                          boxShadow: [
-                            BoxShadow(
-                              color: SipiColors.primary.withValues(alpha: 0.35),
-                              blurRadius: 24,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
+                        width: 96,
+                        height: 96,
+                        decoration: Clay.button(SipiColors.primary,
+                            radius: 30, depth: 8),
                         child: const Icon(Icons.auto_awesome,
                             color: Colors.white, size: 44),
                       ),
@@ -396,13 +383,8 @@ class ThanksScreen extends StatelessWidget {
               Container(
                 width: 130,
                 height: 130,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: [SipiColors.gold, SipiColors.warning],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight),
-                  borderRadius: BorderRadius.circular(32),
-                ),
+                decoration: Clay.button(SipiColors.warning,
+                    radius: 34, depth: 8),
                 child: const Icon(Icons.emoji_events,
                     color: Colors.white, size: 72),
               ),

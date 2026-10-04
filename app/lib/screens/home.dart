@@ -160,13 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 10),
                   Row(children: [
                     Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius:
-                            BorderRadius.circular(SipiRadii.md),
-                        border:
-                            Border.all(color: SipiColors.border),
-                      ),
+                      decoration: Clay.card(radius: SipiRadii.md, depth: 5),
                       child: IconButton(
                         onPressed: () async {
                           if (!s.canInteract) {
@@ -193,20 +187,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 10),
                     Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            SipiColors.primaryLight,
-                            SipiColors.primaryDark
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius:
-                            BorderRadius.circular(SipiRadii.md),
-                      ),
+                      width: 46,
+                      height: 46,
+                      decoration: Clay.button(SipiColors.primary,
+                          radius: SipiRadii.md, depth: 5),
                       alignment: Alignment.center,
                       child: Text(
                           s.firstName.isEmpty
@@ -319,20 +303,12 @@ class _CategoryTile extends StatelessWidget {
         onTap: () => onTap(tab),
         child: Column(children: [
           Container(
-            width: 60,
-            height: 60,
+            width: 62,
+            height: 62,
             decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    color.withValues(alpha: 0.16),
-                    color.withValues(alpha: 0.07)
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(SipiRadii.lg),
-                border: Border.all(
-                    color: color.withValues(alpha: 0.18), width: 1)),
+                color: Color.lerp(color, Colors.white, 0.82),
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: Clay.shadows(depth: 5)),
             child: Icon(icon, color: color, size: 26),
           ),
           const SizedBox(height: 7),

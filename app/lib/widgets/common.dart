@@ -6,24 +6,61 @@ import '../core/social_labels.dart';
 import '../core/api.dart';
 import '../core/session.dart';
 
-class SipiButton extends StatelessWidget {
+/// Botón principal estilo clay: pieza esponjosa con doble sombra y
+/// animación de "hundido" al presionarlo.
+class SipiButton extends StatefulWidget {
   final String label;
   final VoidCallback? onPressed;
   final bool loading;
-  const SipiButton(
-      {super.key, required this.label, this.onPressed, this.loading = false});
+  final Color color;
+  const SipiButton({
+    super.key,
+    required this.label,
+    this.onPressed,
+    this.loading = false,
+    this.color = SipiColors.primary,
+  });
+
+  @override
+  State<SipiButton> createState() => _SipiButtonState();
+}
+
+class _SipiButtonState extends State<SipiButton> {
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: loading ? null : onPressed,
-      child: loading
-          ? const SizedBox(
-              height: 22,
-              width: 22,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2.5, color: Colors.white))
-          : Text(label),
+    final enabled = widget.onPressed != null && !widget.loading;
+    final color = enabled ? widget.color : SipiColors.muted.withValues(alpha: 0.55);
+    return GestureDetector(
+      onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
+      onTapUp: enabled ? (_) => setState(() => _pressed = false) : null,
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: enabled ? widget.onPressed : null,
+      child: AnimatedScale(
+        scale: _pressed ? 0.965 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 110),
+          height: 56,
+          alignment: Alignment.center,
+          decoration: _pressed
+              ? Clay.pressed(color: color, radius: SipiRadii.md)
+              : Clay.button(color, radius: SipiRadii.md),
+          child: widget.loading
+              ? const SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.5, color: Colors.white))
+              : Text(widget.label,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2)),
+        ),
+      ),
     );
   }
 }
@@ -34,15 +71,23 @@ class PointsPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: SipiColors.primary.withValues(alpha: 0.1),
+        color: SipiColors.successSoft,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+              color: Colors.white, offset: Offset(-3, -3), blurRadius: 6),
+          BoxShadow(
+              color: Color(0xFFB9C3DA),
+              offset: Offset(3, 3),
+              blurRadius: 6),
+        ],
       ),
       child: Text('+$points pts',
           style: const TextStyle(
-              color: SipiColors.primary,
-              fontWeight: FontWeight.w700,
+              color: SipiColors.success,
+              fontWeight: FontWeight.w800,
               fontSize: 12)),
     );
   }
@@ -131,18 +176,13 @@ class TaskCard extends StatelessWidget {
     final bg = categoryColor(task.category);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(SipiRadii.lg),
-        border: Border.all(color: SipiColors.border),
-        boxShadow: SipiShadows.soft,
-      ),
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: Clay.card(),
       child: InkWell(
         borderRadius: BorderRadius.circular(SipiRadii.lg),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               TaskThumb(task: task),
@@ -228,14 +268,22 @@ class TaskThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (task.imageUrl.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(SipiRadii.md),
-        child: Image.network(
-          task.imageUrl,
-          width: 48,
-          height: 48,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _iconThumb(),
+      return Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: Clay.shadows(depth: 4),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Image.network(
+            task.imageUrl,
+            width: 52,
+            height: 52,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _iconThumb(),
+          ),
         ),
       );
     }
@@ -245,19 +293,13 @@ class TaskThumb extends StatelessWidget {
   Widget _iconThumb() {
     final bg = taskIconBg(task.category);
     return Container(
-      width: 48,
-      height: 48,
+      width: 52,
+      height: 52,
       decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              bg.withValues(alpha: 0.16),
-              bg.withValues(alpha: 0.08)
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(SipiRadii.md)),
-      child: Icon(taskIcon(task.category), color: bg, size: 22),
+          color: bg.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: Clay.shadows(depth: 4)),
+      child: Icon(taskIcon(task.category), color: bg, size: 24),
     );
   }
 }
@@ -275,24 +317,11 @@ class BalanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [SipiColors.primaryLight, SipiColors.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(SipiRadii.xl),
-        boxShadow: [
-          BoxShadow(
-            color: SipiColors.primary.withValues(alpha: 0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+      decoration: Clay.card(
+          color: const Color(0xFFD9E4FD), radius: SipiRadii.xl, depth: 8),
       child: Stack(
         children: [
-          // Adornos decorativos.
+          // Adornos decorativos clay.
           Positioned(
             right: -30,
             top: -40,
@@ -301,7 +330,7 @@ class BalanceCard extends StatelessWidget {
               height: 130,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
+                color: Colors.white.withValues(alpha: 0.35),
               ),
             ),
           ),
@@ -313,7 +342,7 @@ class BalanceCard extends StatelessWidget {
               height: 110,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.06),
+                color: Colors.white.withValues(alpha: 0.25),
               ),
             ),
           ),
@@ -326,55 +355,54 @@ class BalanceCard extends StatelessWidget {
                     children: [
                       Row(children: [
                         Container(
-                          padding: const EdgeInsets.all(7),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.16),
-                            borderRadius:
-                                BorderRadius.circular(SipiRadii.sm),
-                          ),
+                          padding: const EdgeInsets.all(9),
+                          decoration: Clay.button(SipiColors.primary,
+                              radius: SipiRadii.sm, depth: 4),
                           child: const Icon(Icons.stars_outlined,
                               color: Colors.white, size: 16),
                         ),
                         const SizedBox(width: 8),
                         const Text('Tus puntos',
                             style: TextStyle(
-                                color: Colors.white70, fontSize: 13)),
+                                color: SipiColors.primaryDark,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700)),
                       ]),
                       const SizedBox(height: 8),
                       Text(_fmt(points),
                           style: const TextStyle(
-                              color: Colors.white,
+                              color: SipiColors.primaryDark,
                               fontSize: 34,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w900,
                               letterSpacing: -0.5)),
                       const SizedBox(height: 6),
                       Text(
                           'Te faltan ${pointsPerUsd - (points % pointsPerUsd)} pts para canjear \$1.00',
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.75),
-                              fontSize: 11.5)),
+                          style: const TextStyle(
+                              color: SipiColors.text,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600)),
                     ]),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(SipiRadii.md),
-                ),
+                decoration: Clay.card(
+                    color: Colors.white.withValues(alpha: 0.65),
+                    radius: SipiRadii.md,
+                    depth: 5),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('Equivale a',
+                      const Text('Equivale a',
                           style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.75),
-                              fontSize: 11)),
+                              color: SipiColors.muted, fontSize: 11)),
                       const SizedBox(height: 2),
                       Text('\$${usd.toStringAsFixed(2)}',
                           style: const TextStyle(
-                              color: Colors.white,
+                              color: SipiColors.primaryDark,
                               fontSize: 22,
-                              fontWeight: FontWeight.w800)),
+                              fontWeight: FontWeight.w900)),
                     ]),
               ),
             ],
@@ -462,17 +490,12 @@ class GuestGateCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 84,
-                height: 84,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [
-                    SipiColors.primaryLight,
-                    SipiColors.primaryDark
-                  ]),
-                  borderRadius: BorderRadius.circular(24),
-                ),
+                width: 88,
+                height: 88,
+                decoration:
+                    Clay.circle(SipiColors.primarySoft, depth: 7),
                 child: const Icon(Icons.person_add_alt_outlined,
-                    color: Colors.white, size: 40),
+                    color: SipiColors.primary, size: 40),
               ),
               const SizedBox(height: 20),
               Text(title,
@@ -510,12 +533,10 @@ class EmptyState extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
-            width: 88,
-            height: 88,
-            decoration: BoxDecoration(
-              color: SipiColors.primarySoft,
-              borderRadius: BorderRadius.circular(SipiRadii.xl),
-            ),
+            width: 92,
+            height: 92,
+            decoration:
+                Clay.circle(SipiColors.primarySoft, depth: 7),
             child: Icon(icon, size: 40, color: SipiColors.primary),
           ),
           const SizedBox(height: 14),

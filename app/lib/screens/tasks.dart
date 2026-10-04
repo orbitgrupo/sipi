@@ -359,7 +359,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                         height: 72,
                         decoration: BoxDecoration(
                           color: taskIconBg(t.category).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: Clay.shadows(depth: 5),
                         ),
                         child: Icon(taskIcon(t.category),
                             color: taskIconBg(t.category), size: 36),
@@ -400,9 +401,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                         },
                         child: Container(
                           padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14)),
+                          decoration: Clay.card(radius: 18, depth: 5),
                           child: Row(children: [
                             const Icon(Icons.person_outline,
                                 color: SipiColors.muted),
@@ -504,8 +503,7 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(14)),
+      decoration: Clay.card(radius: 18, depth: 5),
       child: Row(children: [
         Icon(icon, color: SipiColors.muted),
         const SizedBox(width: 10),
@@ -531,8 +529,9 @@ class _StatusBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(14)),
+          color: Color.lerp(color, Colors.white, 0.78),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: Clay.shadows(depth: 5)),
       child: Row(children: [
         Icon(icon, color: fg),
         const SizedBox(width: 10),
@@ -609,9 +608,8 @@ class _TaskSuccessScreenState extends State<TaskSuccessScreen> {
                   Container(
                     width: 110,
                     height: 110,
-                    decoration: BoxDecoration(
-                        color: SipiColors.success.withValues(alpha: 0.12),
-                        shape: BoxShape.circle),
+                    decoration: Clay.circle(
+                        SipiColors.successSoft, depth: 6),
                     child: const Icon(Icons.check,
                         color: SipiColors.success, size: 60),
                   ),
@@ -730,11 +728,8 @@ class _SocialHandleFormState extends State<_SocialHandleForm> {
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: SipiColors.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: SipiColors.primary.withValues(alpha: 0.25)),
-          ),
+          decoration: Clay.card(
+            color: SipiColors.clayBlue, radius: 18, depth: 5),
           child: Row(
             children: [
               Container(

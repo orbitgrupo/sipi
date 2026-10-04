@@ -82,37 +82,14 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                   padding: const EdgeInsets.all(20),
                   child: Container(
                     padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius:
-                          BorderRadius.circular(SipiRadii.xl),
-                      border: Border.all(color: SipiColors.border),
-                      boxShadow: SipiShadows.card,
-                    ),
+                    decoration: Clay.card(radius: SipiRadii.xl, depth: 8),
                     child: Column(
                       children: [
                         Container(
                           width: 88,
                           height: 88,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                                colors: [
-                                  SipiColors.accentLight,
-                                  SipiColors.accentDark
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight),
-                            borderRadius:
-                                BorderRadius.circular(28),
-                            boxShadow: [
-                              BoxShadow(
-                                color: SipiColors.accent
-                                    .withValues(alpha: 0.35),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
+                          decoration: Clay.button(SipiColors.accent,
+                              radius: 28, depth: 7),
                           child: const Icon(Icons.emoji_events,
                               color: Colors.white, size: 44),
                         ),
@@ -128,9 +105,9 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
-                            color: SipiColors.accent
-                                .withValues(alpha: 0.1),
+                            color: SipiColors.clayPurple,
                             borderRadius: BorderRadius.circular(20),
+                            boxShadow: Clay.shadows(depth: 4),
                           ),
                           child: Text(_levelName(level),
                               style: const TextStyle(
@@ -187,29 +164,17 @@ class _AchievementsScreenState extends State<AchievementsScreen>
           opacity: a.earned ? 1 : 0.5,
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(SipiRadii.lg),
-              border: Border.all(
-                color: a.earned
-                    ? SipiColors.primary.withValues(alpha: 0.25)
-                    : SipiColors.border,
-              ),
-            ),
+            decoration: Clay.card(depth: 5),
             child: Column(children: [
               Container(
                 width: 62,
                 height: 62,
-                decoration: BoxDecoration(
-                  gradient: a.earned
-                      ? LinearGradient(colors: [
-                          SipiColors.primary.withValues(alpha: 0.16),
-                          SipiColors.primary.withValues(alpha: 0.06),
-                        ])
-                      : null,
-                  color: a.earned ? null : SipiColors.background,
-                  shape: BoxShape.circle,
-                ),
+                decoration: a.earned
+                    ? Clay.circle(SipiColors.clayBlue, depth: 5)
+                    : const BoxDecoration(
+                        color: SipiColors.background,
+                        shape: BoxShape.circle,
+                      ),
                 child: Icon(
                   a.earned ? Icons.verified : Icons.lock_outline,
                   color: a.earned ? SipiColors.primary : SipiColors.muted,

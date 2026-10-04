@@ -52,8 +52,9 @@ class ProfileScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                    color: SipiColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20)),
+                    color: SipiColors.clayBlue,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: Clay.shadows(depth: 4)),
                 child: Text(
                     '${bal?.points ?? 0} pts · Nivel ${bal?.level ?? 1}',
                     style: const TextStyle(
@@ -67,8 +68,9 @@ class ProfileScreen extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                      color: SipiColors.warningSoft,
-                      borderRadius: BorderRadius.circular(20)),
+                      color: SipiColors.clayYellow,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: Clay.shadows(depth: 4)),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
@@ -309,21 +311,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Container(
               width: 96,
               height: 96,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [SipiColors.primaryLight, SipiColors.primaryDark],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: SipiColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
+              decoration: Clay.button(SipiColors.primary,
+                  radius: 30, depth: 7),
               alignment: Alignment.center,
               child: Text(
                   (u?.name ?? '?').substring(0, 1).toUpperCase(),
@@ -376,11 +365,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   borderRadius: BorderRadius.circular(SipiRadii.md)),
               child: ListTile(
                 leading: Container(
-                  width: 42,
-                  height: 42,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: SipiColors.primarySoft,
-                    borderRadius: BorderRadius.circular(12),
+                    color: SipiColors.clayBlue,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: Clay.shadows(depth: 4),
                   ),
                   child: const Icon(Icons.lock_outline,
                       color: SipiColors.primary, size: 20),
@@ -478,10 +468,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: SipiColors.primarySoft,
-                borderRadius: BorderRadius.circular(SipiRadii.lg),
-              ),
+              decoration: Clay.card(
+                  color: SipiColors.clayBlue, radius: SipiRadii.lg, depth: 5),
               child: const Row(children: [
                 Icon(Icons.info_outline, color: SipiColors.primary, size: 20),
                 SizedBox(width: 10),
@@ -1237,12 +1225,8 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               width: double.infinity,
               margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: SipiColors.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: SipiColors.primary.withValues(alpha: 0.25)),
-              ),
+              decoration: Clay.card(
+                  color: SipiColors.clayBlue, radius: 16, depth: 5),
               child: const Row(
                 children: [
                   Icon(Icons.support_agent,
@@ -1284,14 +1268,10 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                                   margin: const EdgeInsets.symmetric(
                                       vertical: 8),
                                   padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: SipiColors.primary
-                                        .withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color: SipiColors.primary
-                                            .withValues(alpha: 0.25)),
-                                  ),
+                                  decoration: Clay.card(
+                                      color: SipiColors.clayBlue,
+                                      radius: 14,
+                                      depth: 4),
                                   child: Text(
                                     (m['body'] as String?) ?? '',
                                     textAlign: TextAlign.center,
@@ -1319,16 +1299,22 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                                           MediaQuery.of(context).size.width *
                                               0.75),
                                   decoration: BoxDecoration(
-                                    color: mine
-                                        ? SipiColors.primary
-                                        : Colors.grey.shade200,
+                                    gradient: mine
+                                        ? LinearGradient(colors: [
+                                            Color.lerp(SipiColors.primary,
+                                                Colors.white, 0.18)!,
+                                            SipiColors.primary,
+                                          ])
+                                        : null,
+                                    color: mine ? null : SipiColors.card,
                                     borderRadius: BorderRadius.only(
-                                      topLeft: const Radius.circular(16),
-                                      topRight: const Radius.circular(16),
-                                      bottomLeft: Radius.circular(mine ? 16 : 4),
+                                      topLeft: const Radius.circular(18),
+                                      topRight: const Radius.circular(18),
+                                      bottomLeft: Radius.circular(mine ? 18 : 6),
                                       bottomRight:
-                                          Radius.circular(mine ? 4 : 16),
+                                          Radius.circular(mine ? 6 : 18),
                                     ),
+                                    boxShadow: Clay.shadows(depth: 3),
                                   ),
                                   child: Column(
                                     crossAxisAlignment:

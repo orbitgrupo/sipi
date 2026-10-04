@@ -89,38 +89,14 @@ class _RedeemScreenState extends State<RedeemScreen> {
                   opacity: affordable ? 1 : 0.45,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    decoration: BoxDecoration(
-                      gradient: selected
-                          ? const LinearGradient(
-                              colors: [
-                                SipiColors.primaryLight,
-                                SipiColors.primaryDark
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      color: selected ? null : Colors.white,
-                      borderRadius:
-                          BorderRadius.circular(SipiRadii.lg),
-                      border: Border.all(
-                        color: selected
-                            ? Colors.transparent
-                            : SipiColors.border,
-                        width: 1.2,
-                      ),
-                      boxShadow: selected
-                          ? [
-                              BoxShadow(
-                                color: SipiColors.primary
-                                    .withValues(alpha: 0.3),
-                                blurRadius: 14,
-                                offset: const Offset(0, 6),
-                              )
-                            ]
-                          : SipiShadows.soft,
-                    ),
-                    child: Column(
+                    decoration: selected
+                        ? Clay.button(SipiColors.primary,
+                            radius: SipiRadii.lg, depth: 6)
+                        : Clay.card(),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(SipiRadii.lg),
+                      onTap: affordable ? () => setState(() => _sel = i) : null,
+                      child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text('\$${o.usd.toStringAsFixed(2)}',
@@ -150,9 +126,10 @@ class _RedeemScreenState extends State<RedeemScreen> {
                                         : SipiColors.primary)),
                           ),
                         ]),
+                      ),
+                    ),
                   ),
-                ),
-              );
+                );
             },
           ),
           const SizedBox(height: 24),
@@ -166,8 +143,8 @@ class _RedeemScreenState extends State<RedeemScreen> {
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(14)),
+            decoration: Clay.card(
+                color: SipiColors.clayBlue, radius: 18, depth: 5),
             child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -316,12 +293,12 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                 width: 46,
                                 height: 46,
                                 decoration: BoxDecoration(
-                                  color:
-                                      SipiColors.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(13),
+                                  color: SipiColors.clayGreen,
+                                  borderRadius: BorderRadius.circular(15),
+                                  boxShadow: Clay.shadows(depth: 4),
                                 ),
                                 child: const Icon(Icons.attach_money,
-                                    color: SipiColors.primary),
+                                    color: SipiColors.success),
                               ),
                               title: Text('\$${r.amountUsd.toStringAsFixed(2)}',
                                   style: const TextStyle(
@@ -333,13 +310,16 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: (done
+                                  color: Color.lerp(
+                                      done
                                           ? SipiColors.success
                                           : rejected
                                               ? SipiColors.danger
-                                              : SipiColors.warning)
-                                      .withValues(alpha: 0.12),
+                                              : SipiColors.warning,
+                                      Colors.white,
+                                      0.8),
                                   borderRadius: BorderRadius.circular(20),
+                                  boxShadow: Clay.shadows(depth: 3),
                                 ),
                                 child: Text(
                                   done
