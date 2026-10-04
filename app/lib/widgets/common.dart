@@ -119,8 +119,6 @@ Color taskIconBg(String category) {
   }
 }
 
-Color categoryColor(String category) => taskIconBg(category);
-
 class TaskCard extends StatelessWidget {
   final Task task;
   final VoidCallback onTap;
@@ -128,8 +126,6 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = categoryColor(task.category);
-
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(

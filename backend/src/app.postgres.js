@@ -2469,8 +2469,17 @@ function createApp(db) {
       console.error('[sipi]', error);
     }
 
+    // Para administradores se incluye el detalle técnico del fallo: acelera
+    // el diagnóstico desde la consola del navegador sin exponer nada a los
+    // usuarios normales de la app.
+    const detail =
+      status >= 500 && req.user?.role === 'admin'
+        ? String(error?.message || err?.message || '')
+        : '';
+
     return res.status(status).json({
       error: code,
+      ...(detail ? { detail } : {}),
     });
   });
 
