@@ -75,14 +75,6 @@ class PointsPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: SipiColors.successSoft,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-              color: Colors.white, offset: Offset(-3, -3), blurRadius: 6),
-          BoxShadow(
-              color: Color(0xFFB9C3DA),
-              offset: Offset(3, 3),
-              blurRadius: 6),
-        ],
       ),
       child: Text('+$points pts',
           style: const TextStyle(
@@ -317,95 +309,66 @@ class BalanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: Clay.card(
-          color: const Color(0xFFD9E4FD), radius: SipiRadii.xl, depth: 8),
-      child: Stack(
+      decoration: BoxDecoration(
+        color: SipiColors.primaryDark,
+        borderRadius: BorderRadius.circular(SipiRadii.xl),
+        boxShadow: [
+          BoxShadow(
+            color: SipiColors.primaryDark.withValues(alpha: 0.3),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Adornos decorativos clay.
-          Positioned(
-            right: -30,
-            top: -40,
-            child: Container(
-              width: 130,
-              height: 130,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.35),
-              ),
-            ),
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Row(children: [
+                Icon(Icons.stars_outlined, color: Colors.white70, size: 16),
+                SizedBox(width: 8),
+                Text('Tus puntos',
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
+              ]),
+              const SizedBox(height: 8),
+              Text(_fmt(points),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 34,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5)),
+              const SizedBox(height: 6),
+              Text(
+                  'Te faltan ${pointsPerUsd - (points % pointsPerUsd)} pts para canjear \$1.00',
+                  style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500)),
+            ]),
           ),
-          Positioned(
-            right: 30,
-            bottom: -55,
-            child: Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.25),
-              ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(SipiRadii.md),
             ),
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(children: [
-                        Container(
-                          padding: const EdgeInsets.all(9),
-                          decoration: Clay.button(SipiColors.primary,
-                              radius: SipiRadii.sm, depth: 4),
-                          child: const Icon(Icons.stars_outlined,
-                              color: Colors.white, size: 16),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text('Tus puntos',
-                            style: TextStyle(
-                                color: SipiColors.primaryDark,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700)),
-                      ]),
-                      const SizedBox(height: 8),
-                      Text(_fmt(points),
-                          style: const TextStyle(
-                              color: SipiColors.primaryDark,
-                              fontSize: 34,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.5)),
-                      const SizedBox(height: 6),
-                      Text(
-                          'Te faltan ${pointsPerUsd - (points % pointsPerUsd)} pts para canjear \$1.00',
-                          style: const TextStyle(
-                              color: SipiColors.text,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600)),
-                    ]),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 10),
-                decoration: Clay.card(
-                    color: Colors.white.withValues(alpha: 0.65),
-                    radius: SipiRadii.md,
-                    depth: 5),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text('Equivale a',
-                          style: TextStyle(
-                              color: SipiColors.muted, fontSize: 11)),
-                      const SizedBox(height: 2),
-                      Text('\$${usd.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                              color: SipiColors.primaryDark,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900)),
-                    ]),
-              ),
-            ],
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('Equivale a',
+                      style: TextStyle(color: Colors.white70, fontSize: 11)),
+                  const SizedBox(height: 2),
+                  Text('\$${usd.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900)),
+                ]),
           ),
         ],
       ),
